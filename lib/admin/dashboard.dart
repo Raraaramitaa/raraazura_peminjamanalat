@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:peminjam_alat/pengguna/pengguna.dart';
 
 class DashboardAdminPage extends StatelessWidget {
   const DashboardAdminPage({super.key});
@@ -72,7 +73,6 @@ class DashboardAdminPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  // ===== ROW 1 =====
                   Row(
                     children: [
                       _statCard(
@@ -88,10 +88,7 @@ class DashboardAdminPage extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 12),
-
-                  // ===== ROW 2 =====
                   Row(
                     children: [
                       _statCard(
@@ -107,10 +104,7 @@ class DashboardAdminPage extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
-
-                  // ===== GRAFIK =====
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -122,17 +116,14 @@ class DashboardAdminPage extends StatelessWidget {
                       children: [
                         const Text(
                           'Grafik Peminjaman Bulan Ini',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
                           height: 150,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceAround,
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               _bar(60),
                               _bar(100),
@@ -144,8 +135,7 @@ class DashboardAdminPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceAround,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: const [
                             Text('1'),
                             Text('2'),
@@ -157,7 +147,6 @@ class DashboardAdminPage extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 80),
                 ],
               ),
@@ -166,11 +155,20 @@ class DashboardAdminPage extends StatelessWidget {
         ],
       ),
 
-      // ================= BOTTOM NAV =================
+      // ================= NAVBAR =================
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.black54,
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PenggunaPage()),
+            );
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -201,8 +199,6 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
-  // ================= WIDGET CARD =================
-
   Widget _statCard({
     required String title,
     required String value,
@@ -221,23 +217,14 @@ class DashboardAdminPage extends StatelessWidget {
           children: [
             Icon(icon),
             const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             if (subtitle != null)
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 12),
-              ),
+              Text(subtitle, style: const TextStyle(fontSize: 12)),
           ],
         ),
       ),
@@ -260,10 +247,7 @@ class DashboardAdminPage extends StatelessWidget {
           children: [
             Icon(icon, size: 40),
             const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),
