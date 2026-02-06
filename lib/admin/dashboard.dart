@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:peminjam_alat/pengguna/pengguna.dart';
+// tambahkan import halaman Pengguna
 
 class DashboardAdminPage extends StatelessWidget {
   const DashboardAdminPage({super.key});
@@ -171,6 +173,15 @@ class DashboardAdminPage extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.black54,
+        onTap: (index) {
+          if (index == 1) {
+            // jika klik Pengguna (index 1)
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PenggunaPage()),
+            );
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),

@@ -76,7 +76,7 @@ class _EditPenggunaPageState extends State<EditPenggunaPage> {
       child: Row(
         children: [
           Text(
-            '$label',
+            label,
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           const SizedBox(width: 10),
