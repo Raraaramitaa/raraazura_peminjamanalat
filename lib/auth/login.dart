@@ -4,6 +4,8 @@ import 'package:peminjam_alat/petugas/dashboard_petugas.dart';
 import 'package:peminjam_alat/peminjam/dashboard_peminjam.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../alat/alat.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 

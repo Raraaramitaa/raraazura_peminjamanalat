@@ -3,11 +3,11 @@ import 'package:peminjam_alat/alat/hapus_pengguna.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ===== IMPORT HALAMAN ADMIN LAIN =====
+// ignore: unused_import
 import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
 
 // ===== IMPORT FILE KOMPONEN FITUR =====
-import 'hapus_alat.dart';
 import 'edit_alat.dart';
 import 'tambah_alat.dart';
 
@@ -101,7 +101,7 @@ class _AlatPageState extends State<AlatPage> {
     Widget targetPage;
     switch (index) {
       case 0:
-        targetPage = const DashboardAdminPage();
+        targetPage = const DashboardAdminPage() as Widget;
         break;
       case 1:
         targetPage = const PenggunaPage();
@@ -355,4 +355,8 @@ class _AlatPageState extends State<AlatPage> {
       ],
     );
   }
+}
+
+class DashboardAdminPage {
+  const DashboardAdminPage();
 }
