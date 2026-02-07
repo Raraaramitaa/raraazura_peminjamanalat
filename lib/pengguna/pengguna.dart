@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
-import 'tambah_pengguna.dart';
-import 'edit_pengguna.dart';
 import 'hapus_pengguna.dart';
+import 'tambah_pengguna.dart'; // Kalau mau pakai tombol tambah
+import 'edit_pengguna.dart'; // Kalau mau pakai tombol edit
 
-class PenggunaPage extends StatelessWidget {
+class PenggunaPage extends StatefulWidget {
   const PenggunaPage({super.key});
+
+  @override
+  State<PenggunaPage> createState() => _PenggunaPageState();
+}
+
+class _PenggunaPageState extends State<PenggunaPage> {
+  // Data pengguna
+  List<Map<String, String>> pengguna = [
+    {'role': 'Admin', 'nama': 'Rara Aramita', 'email': 'rara@gmail.com'},
+    {'role': 'Petugas', 'nama': 'Azzuraa', 'email': 'azura@gmail.com'},
+    {'role': 'Admin', 'nama': 'Lingga Azzay', 'email': 'lingga@gmail.com'},
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -14,29 +26,75 @@ class PenggunaPage extends StatelessWidget {
         backgroundColor: const Color(0xFF8FAFB6),
         title: const Text('Pengguna'),
       ),
-      body: ListView(
+      body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        children: [
-          _userCard(
-            context,
-            role: 'Admin',
-            nama: 'Rara Aramita',
-            email: 'rara@gmail.com',
-          ),
-          _userCard(
-            context,
-            role: 'Petugas',
-            nama: 'Azzuraa',
-            email: 'azura@gmail.com',
-          ),
-          _userCard(
-            context,
-            role: 'Admin',
-            nama: 'Lingga Azzay',
-            email: 'lingga@gmail.com',
-          ),
-        ],
+        itemCount: pengguna.length,
+        itemBuilder: (context, index) {
+          final user = pengguna[index];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              children: [
+                const CircleAvatar(child: Icon(Icons.person)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user['role']!,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(user['nama']!),
+                      Text(
+                        user['email']!,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                // Tombol edit (opsional)
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  onPressed: () {
+                    // Navigasi ke halaman edit
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EditPenggunaPage(),
+                      ),
+                    );
+                  },
+                ),
+                // Tombol hapus
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    // Panggil dialog hapus
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => DialogHapusPengguna(
+                        onHapus: () {
+                          setState(() {
+                            pengguna.removeAt(index);
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
       ),
+      // Tombol tambah pengguna (opsional)
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF8FAFB6),
         onPressed: () {
@@ -48,60 +106,6 @@ class PenggunaPage extends StatelessWidget {
           );
         },
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _userCard(
-    BuildContext context, {
-    required String role,
-    required String nama,
-    required String email,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(child: Icon(Icons.person)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(role,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(nama),
-                Text(email, style: const TextStyle(fontSize: 12)),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.blue),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const EditPenggunaPage(),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (_) => const PenggunaPage(),
-              );
-            },
-          ),
-        ],
       ),
     );
   }

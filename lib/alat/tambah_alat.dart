@@ -78,7 +78,7 @@ class TambahAlatPage extends StatelessWidget {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 hint: Text(hint), isExpanded: true,
-                items: [], onChanged: (v) {},
+                items: const [], onChanged: (v) {},
               ),
             ),
           ),

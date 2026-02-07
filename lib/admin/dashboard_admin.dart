@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:peminjam_alat/alat/alat.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
 
+// Bagian import ini di-uncomment jika filenya sudah kamu buat
+// import 'package:peminjam_alat/peminjaman/peminjaman.dart';
+// import 'package:peminjam_alat/pengembalian/pengembalian.dart';
+
 class DashboardAdminPage extends StatelessWidget {
   const DashboardAdminPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFBFD6DB), // Latar belakang abu-abu kebiruan
+      backgroundColor: const Color(0xFFBFD6DB),
       body: Column(
         children: [
           // ================= HEADER SECTION =================
@@ -16,7 +20,7 @@ class DashboardAdminPage extends StatelessWidget {
             height: 180,
             width: double.infinity,
             decoration: const BoxDecoration(
-              color: Color(0xFF8FAFB6), // Warna Teal Header
+              color: Color(0xFF8FAFB6),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(50),
                 bottomRight: Radius.circular(50),
@@ -80,7 +84,7 @@ class DashboardAdminPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // Row 1: Data Peminjam (Besar) & Data Petugas (Ikon)
+                  // Row 1: Data Peminjam & Data Petugas
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -103,7 +107,7 @@ class DashboardAdminPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
 
-                  // Row 2: Sedang Dipinjam & Kotak Kosong (Sesuai Layout Gambar)
+                  // Row 2: Sedang Dipinjam & Kotak Dekoratif
                   Row(
                     children: [
                       _buildSmallStatCard(
@@ -128,7 +132,7 @@ class DashboardAdminPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
 
-                  // Row 3: Tersedia & Spacer
+                  // Row 3: Tersedia
                   Row(
                     children: [
                       _buildSmallStatCard(
@@ -172,7 +176,7 @@ class DashboardAdminPage extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 100), // Padding bawah agar tidak tertutup navbar
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -198,9 +202,15 @@ class DashboardAdminPage extends StatelessWidget {
           unselectedFontSize: 10,
           onTap: (index) {
             if (index == 1) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const PenggunaPage()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const PenggunaPage()));
             } else if (index == 2) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const AlatPage()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AlatPage()));
+            } else if (index == 4) {
+              // TODO: Navigasi ke PeminjamanPage jika sudah dibuat
+              // Navigator.push(context, MaterialPageRoute(builder: (context) => const PeminjamanPage()));
+            } else if (index == 5) {
+              // TODO: Navigasi ke PengembalianPage jika sudah dibuat
+              // Navigator.push(context, MaterialPageRoute(builder: (context) => const PengembalianPage()));
             }
           },
           items: const [
@@ -216,7 +226,8 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
-  // 1. Widget Kartu Statistik Utama (Data Peminjam)
+  // ================= HELPER WIDGETS =================
+
   Widget _buildStatCard(BuildContext context,
       {required String title,
       required String value,
@@ -248,7 +259,6 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
-  // 2. Widget Kartu Ikon (Data Petugas)
   Widget _buildIconCard(BuildContext context,
       {required String title, required IconData icon, required Widget target}) {
     return Expanded(
@@ -278,7 +288,6 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
-  // 3. Widget Kartu Kecil (Sedang Dipinjam / Tersedia)
   Widget _buildSmallStatCard(BuildContext context,
       {required String title,
       required String value,
@@ -314,13 +323,11 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
-  // 4. Bagian Grafik Batang dengan Grid
   Widget _buildChartArea() {
     return SizedBox(
       height: 200,
       child: Row(
         children: [
-          // Y-Axis Labels (Angka Samping)
           const Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -336,11 +343,9 @@ class DashboardAdminPage extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 10),
-          // Area Batang Grafik
           Expanded(
             child: Stack(
               children: [
-                // Garis Grid Horizontal
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(
@@ -348,18 +353,17 @@ class DashboardAdminPage extends StatelessWidget {
                     (index) => Container(height: 1, color: Colors.black12),
                   ),
                 ),
-                // Batang-batang Grafik
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _buildBar(80),  // Mar
-                      _buildBar(130), // Apr
-                      _buildBar(70),  // Mei
-                      _buildBar(100), // Jun
-                      _buildBar(40),  // Jul
+                      _buildBar(80),
+                      _buildBar(130),
+                      _buildBar(70),
+                      _buildBar(100),
+                      _buildBar(40),
                     ],
                   ),
                 ),
@@ -371,7 +375,6 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
-  // Helper Batang Grafik
   Widget _buildBar(double height) {
     return Container(
       width: 30,
@@ -385,9 +388,6 @@ class DashboardAdminPage extends StatelessWidget {
             offset: const Offset(2, 0),
           )
         ],
-
-
-        
       ),
     );
   }
