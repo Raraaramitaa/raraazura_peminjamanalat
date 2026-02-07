@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:peminjam_alat/admin/dashboard.dart';
+import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
