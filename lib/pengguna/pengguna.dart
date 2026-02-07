@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'tambah_pengguna.dart';
 import 'edit_pengguna.dart';
-import 'hapus_pengguna.dart';
 
 class PenggunaPage extends StatelessWidget {
   const PenggunaPage({super.key});
@@ -42,7 +41,9 @@ class PenggunaPage extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const TambahPenggunaPage()),
+            MaterialPageRoute(
+              builder: (_) => const TambahPenggunaPage(),
+            ),
           );
         },
         child: const Icon(Icons.add),
@@ -50,10 +51,12 @@ class PenggunaPage extends StatelessWidget {
     );
   }
 
-  Widget _userCard(BuildContext context,
-      {required String role,
-      required String nama,
-      required String email}) {
+  Widget _userCard(
+    BuildContext context, {
+    required String role,
+    required String nama,
+    required String email,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -69,7 +72,8 @@ class PenggunaPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(role, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(role,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(nama),
                 Text(email, style: const TextStyle(fontSize: 12)),
               ],
@@ -80,16 +84,19 @@ class PenggunaPage extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const EditPenggunaPage()),
+                MaterialPageRoute(
+                  builder: (_) => const EditPenggunaPage(),
+                ),
               );
             },
           ),
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const HapusPenggunaPage()),
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const PenggunaPage(),
               );
             },
           ),
