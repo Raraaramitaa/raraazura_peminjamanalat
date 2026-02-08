@@ -1,26 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:peminjam_alat/alat/hapus_pengguna.dart';
+import 'package:peminjam_alat/auth/logout.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// ===== IMPORT HALAMAN ADMIN LAIN =====
+// Import halaman lain (Pastikan file ini ada di project Anda)
+import 'tambah_alat.dart';
+import 'edit_alat.dart';
+import 'hapus_pengguna.dart'; // Berisi HapusAlatDialog
+
 import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
+// ignore: unused_import
+import 'package:peminjam_alat/admin/logout.dart';
+// Perbaikan: Gunakan 'as' jika nama class KategoriPage bentrok
+import 'package:peminjam_alat/kategori/kategori.dart' as kat;
 
-// ===== IMPORT FILE KOMPONEN FITUR =====
-import 'edit_alat.dart';
-import 'tambah_alat.dart';
-
-// Placeholder untuk halaman yang belum ada agar tidak error saat navigasi
+// Placeholder untuk halaman yang belum ada
 class KategoriPage extends StatelessWidget {
   const KategoriPage({super.key});
   @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: Text("Halaman Kategori")));
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: Text("Halaman Kategori")));
 }
 
 class PeminjamanPage extends StatelessWidget {
   const PeminjamanPage({super.key});
   @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: Text("Halaman Peminjaman")));
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: Text("Halaman Peminjaman")));
 }
 
 class AlatPage extends StatefulWidget {
@@ -31,21 +37,43 @@ class AlatPage extends StatefulWidget {
 }
 
 class _AlatPageState extends State<AlatPage> {
-  // Inisialisasi Supabase Client
   final SupabaseClient supabase = Supabase.instance.client;
 
-  // State Management
   List<Map<String, dynamic>> alatList = [];
+  List<Map<String, dynamic>> filteredAlatList = [];
   bool isLoading = true;
-  final int _currentIndex = 2; // Index aktif untuk menu "Produk"
+  final int _currentIndex = 2;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     fetchAlat();
+    _searchController.addListener(() {
+      _onSearchChanged();
+    });
   }
 
-  // ================= 1. FUNGSI AMBIL DATA (READ) =================
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        filteredAlatList = List.from(alatList);
+      } else {
+        filteredAlatList = alatList.where((alat) {
+          final namaAlat = (alat['nama_alat'] ?? '').toString().toLowerCase();
+          return namaAlat.contains(query);
+        }).toList();
+      }
+    });
+  }
+
   Future<void> fetchAlat() async {
     setState(() => isLoading = true);
     try {
@@ -54,12 +82,18 @@ class _AlatPageState extends State<AlatPage> {
           .select()
           .order('id_alat', ascending: true);
 
-      setState(() {
-        alatList = List<Map<String, dynamic>>.from(data);
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          alatList = List<Map<String, dynamic>>.from(data as List);
+          filteredAlatList = List<Map<String, dynamic>>.from(alatList);
+          if (_searchController.text.isNotEmpty) {
+            _onSearchChanged();
+          }
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      debugPrint('Error fetch alat: $e');
+      debugPrint("ERROR FETCH ALAT: $e");
       if (mounted) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -69,17 +103,14 @@ class _AlatPageState extends State<AlatPage> {
     }
   }
 
-  // ================= 2. FUNGSI HAPUS DATA (DELETE) =================
-  Future<void> prosesHapusAlat(int id) async {
+  Future<void> hapusAlat(int id) async {
     try {
       await supabase.from('alat').delete().eq('id_alat', id);
-      
       if (mounted) {
-        Navigator.pop(context); // Menutup dialog konfirmasi
-        fetchAlat(); // Refresh data list
+        fetchAlat();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Barang berhasil dihapus"),
+            content: Text("Alat berhasil dihapus"),
             backgroundColor: Colors.green,
           ),
         );
@@ -87,51 +118,49 @@ class _AlatPageState extends State<AlatPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal menghapus: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text("Gagal menghapus: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
 
-  // ================= 3. LOGIKA NAVIGASI NAVBAR =================
   void _onNavTapped(int index) {
-    if (index == _currentIndex) return;
-
-    Widget targetPage;
+    Widget page;
     switch (index) {
       case 0:
-        targetPage = const DashboardAdminPage();
+        page = const DashboardAdminPage();
         break;
       case 1:
-        targetPage = const PenggunaPage();
+        page = const PenggunaPage();
         break;
       case 2:
-        targetPage = const AlatPage();
+        page = const AlatPage();
         break;
       case 3:
-        targetPage = const KategoriPage();
+        page = const kat.KategoriPage();
         break;
       case 4:
-        targetPage = const PeminjamanPage();
+        page = const PeminjamanPage();
+        break;
+      case 5:
+        page = const LogoutPage();
         break;
       default:
         return;
     }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => targetPage),
-    );
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
   }
 
-  // ================= 4. BUILDER UI UTAMA =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // --- BAGIAN HEADER (BIRU TEAL) ---
+          // ===== HEADER =====
           Container(
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
             decoration: const BoxDecoration(
@@ -143,7 +172,8 @@ class _AlatPageState extends State<AlatPage> {
             ),
             child: Column(
               children: [
-                const Text("Admin", style: TextStyle(color: Colors.white, fontSize: 14)),
+                const Text("Admin",
+                    style: TextStyle(color: Colors.white, fontSize: 14)),
                 const SizedBox(height: 5),
                 const CircleAvatar(
                   radius: 25,
@@ -160,22 +190,39 @@ class _AlatPageState extends State<AlatPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Search Bar
+                
+                // ===== SEARCH BAR =====
                 Container(
-                  height: 40,
+                  height: 45,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
                   ),
-                  child: const TextField(
+                  child: TextField(
+                    controller: _searchController,
                     textAlignVertical: TextAlignVertical.center,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.black87),
                     decoration: InputDecoration(
-                      hintText: "Cari Barang",
-                      hintStyle: TextStyle(color: Colors.white70),
-                      prefixIcon: Icon(Icons.search, color: Colors.white),
+                      hintText: "Cari Barang...",
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF8FAFB6)),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: Colors.grey),
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                            )
+                          : null,
                       border: InputBorder.none,
-                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                     ),
                   ),
                 ),
@@ -183,7 +230,7 @@ class _AlatPageState extends State<AlatPage> {
             ),
           ),
 
-          // --- BAGIAN KATEGORI (FILTER) ---
+          // ===== FILTER KATEGORI =====
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 15),
             child: Row(
@@ -196,108 +243,130 @@ class _AlatPageState extends State<AlatPage> {
               ],
             ),
           ),
+          const Divider(thickness: 1),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Divider(thickness: 1),
-          ),
-
-          // --- BAGIAN GRID LIST BARANG ---
+          // ===== GRID LIST ALAT =====
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF8FAFB6)))
-                : alatList.isEmpty
-                    ? const Center(child: Text("Data alat kosong"))
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: Color(0xFF8FAFB6)))
+                : filteredAlatList.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.search_off, size: 60, color: Colors.grey),
+                            const SizedBox(height: 10),
+                            Text(
+                              "Alat '${_searchController.text}' tidak ditemukan",
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      )
                     : GridView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                        itemCount: alatList.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 10),
+                        itemCount: filteredAlatList.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                           childAspectRatio: 0.75,
                         ),
-                        itemBuilder: (context, index) {
-                          final item = alatList[index];
-                          return _buildItemCard(item);
-                        },
+                        itemBuilder: (context, index) =>
+                            _buildItemCard(filteredAlatList[index]),
                       ),
           ),
         ],
       ),
 
-      // --- TOMBOL TAMBAH (FAB) ---
+      // ===== FLOATING BUTTON TAMBAH =====
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF8FAFB6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const TambahAlatPage()),
-          ).then((_) => fetchAlat()); // Refresh data saat kembali
+            MaterialPageRoute(builder: (_) => const TambahAlatPage()),
+          ).then((_) => fetchAlat());
         },
-        child: const Icon(Icons.add, color: Colors.black, size: 35),
+        child: const Icon(Icons.add, color: Colors.white, size: 35),
       ),
 
-      // --- NAVIGASI BAWAH ---
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black54,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Produk'),
-          BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Pinjam'),
-        ],
+      // ===== BOTTOM NAVBAR (DISESUIAKAN DENGAN DASHBOARD ADMIN) =====
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: const Color(0xFF8FAFB6),
+          currentIndex: _currentIndex,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.black,
+          selectedFontSize: 10,
+          unselectedFontSize: 10,
+          onTap: _onNavTapped,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
+            BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
+            BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Produk'),
+            BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment_return_outlined), label: 'Akun'),
+          ],
+        ),
       ),
     );
   }
 
-  // ================= 5. WIDGET KOMPONEN KECIL =================
-
-  // Widget Card untuk per Item
+  // ================= WIDGET ITEM CARD =================
   Widget _buildItemCard(Map<String, dynamic> item) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9).withOpacity(0.5),
+        color: Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Stack(
         children: [
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Placeholder Gambar
-              const Center(child: Icon(Icons.image, size: 45, color: Colors.grey)),
-              const SizedBox(height: 8),
-              // Nama Barang
-              Text(
-                item['nama_alat'] ?? 'Tanpa Nama',
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              const Icon(Icons.image, size: 45, color: Colors.grey),
+              const SizedBox(height: 5),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  item['nama_alat'] ?? "Tanpa Nama",
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 5),
-              // Label Status
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0xFF8FAFB6),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  item['status'] ?? 'Tersedia',
+                  item['status'] ?? "Ada",
                   style: const TextStyle(color: Colors.white, fontSize: 9),
                 ),
               ),
             ],
           ),
-          // Tombol Edit (Kanan Atas)
           Positioned(
             top: 5,
             right: 5,
@@ -305,13 +374,13 @@ class _AlatPageState extends State<AlatPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => EditAlatPage(data: item)),
+                  MaterialPageRoute(
+                      builder: (_) => EditAlatPage(data: item)),
                 ).then((_) => fetchAlat());
               },
-              child: const Icon(Icons.edit, size: 16, color: Colors.black54),
+              child: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
             ),
           ),
-          // Tombol Hapus (Kanan Bawah)
           Positioned(
             bottom: 5,
             right: 5,
@@ -319,13 +388,13 @@ class _AlatPageState extends State<AlatPage> {
               onTap: () {
                 showDialog(
                   context: context,
-                  barrierDismissible: false,
-                  builder: (context) => HapusAlatDialog(
-                    onConfirm: () => prosesHapusAlat(item['id_alat']),
+                  builder: (_) => HapusAlatDialog(
+                    onConfirm: () => hapusAlat(item['id_alat']),
                   ),
                 );
               },
-              child: const Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+              child: const Icon(Icons.delete_outline,
+                  size: 18, color: Colors.redAccent),
             ),
           ),
         ],
@@ -333,7 +402,6 @@ class _AlatPageState extends State<AlatPage> {
     );
   }
 
-  // Widget untuk Icon Filter Kategori
   Widget _buildFilterIcon(String label, IconData icon) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -347,10 +415,8 @@ class _AlatPageState extends State<AlatPage> {
           child: Icon(icon, color: Colors.white, size: 28),
         ),
         const SizedBox(height: 5),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-        ),
+        Text(label,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
       ],
     );
   }

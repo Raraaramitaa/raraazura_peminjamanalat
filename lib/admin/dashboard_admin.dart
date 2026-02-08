@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:peminjam_alat/alat/alat.dart';
+import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
-
-// Bagian import ini di-uncomment jika filenya sudah kamu buat
-// import 'package:peminjam_alat/peminjaman/peminjaman.dart';
-// import 'package:peminjam_alat/pengembalian/pengembalian.dart';
+// TAMBAHAN: Import file logout
+// ignore: unused_import
+import 'package:peminjam_alat/admin/logout.dart'; 
+// Perbaikan: Gunakan 'as' jika nama class KategoriPage bentrok dengan file lain
+// ignore: unused_import
+import 'package:peminjam_alat/kategori/kategori.dart' as kat; // Tambahkan 'as kat'
 
 class DashboardAdminPage extends StatelessWidget {
   const DashboardAdminPage({super.key});
@@ -17,7 +20,6 @@ class DashboardAdminPage extends StatelessWidget {
         children: [
           // ================= HEADER SECTION =================
           Container(
-            height: 180,
             width: double.infinity,
             decoration: const BoxDecoration(
               color: Color(0xFF8FAFB6),
@@ -26,53 +28,70 @@ class DashboardAdminPage extends StatelessWidget {
                 bottomRight: Radius.circular(50),
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(25, 60, 25, 20),
-              child: Column(
-                children: [
-                  const Text(
-                    'Hi, Selamat Datang',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+            child: SafeArea(
+              child: Padding(
+                // Diubah dari 30 ke 15 agar tidak overflow (garis kuning)
+                padding: const EdgeInsets.fromLTRB(25, 20, 25, 15), 
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ===== Judul + Logout =====
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Hi, Selamat Datang',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.logout, color: Colors.black),
+                          onPressed: () {
+                            // Navigasi ke halaman logout saat ikon di header diklik
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const LogoutPage()));
+                          },
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 15),
-                  Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black26, width: 1),
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black26, width: 1),
+                          ),
+                          child: const CircleAvatar(
+                            radius: 25,
+                            backgroundColor: Color(0xFFD9D9D9),
+                            child: Icon(Icons.person, color: Colors.black, size: 30),
+                          ),
                         ),
-                        child: const CircleAvatar(
-                          radius: 25,
-                          backgroundColor: Color(0xFFD9D9D9),
-                          child: Icon(Icons.person, color: Colors.black, size: 30),
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Admin',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                        const SizedBox(width: 15),
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Admin',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Rara Aramita Azura',
-                            style: TextStyle(color: Colors.black, fontSize: 14),
-                          ),
-                        ],
-                      )
-                    ],
-                  )
-                ],
+                            Text(
+                              'Rara Aramita Azura',
+                              style: TextStyle(color: Colors.black, fontSize: 14),
+                            ),
+                          ],
+                        )
+                      ],
+                    )
+                  ],
+                ),
               ),
             ),
           ),
@@ -84,7 +103,7 @@ class DashboardAdminPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // Row 1: Data Peminjam & Data Petugas
+                  // Row 1
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -107,7 +126,7 @@ class DashboardAdminPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
 
-                  // Row 2: Sedang Dipinjam & Kotak Dekoratif
+                  // Row 2
                   Row(
                     children: [
                       _buildSmallStatCard(
@@ -117,22 +136,11 @@ class DashboardAdminPage extends StatelessWidget {
                         icon: Icons.check_circle_outline,
                         target: const AlatPage(),
                       ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Container(
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF9F3F3),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.black12),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 15),
 
-                  // Row 3: Tersedia
+                  // Row 3
                   Row(
                     children: [
                       _buildSmallStatCard(
@@ -148,7 +156,7 @@ class DashboardAdminPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // ================= GRAFIK PEMINJAMAN =================
+                  // ================= GRAFIK =================
                   Container(
                     padding: const EdgeInsets.all(15),
                     decoration: BoxDecoration(
@@ -166,10 +174,7 @@ class DashboardAdminPage extends StatelessWidget {
                       children: [
                         const Text(
                           'Grafik Peminjaman Bulan Ini',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         const SizedBox(height: 20),
                         _buildChartArea(),
@@ -183,6 +188,7 @@ class DashboardAdminPage extends StatelessWidget {
           ),
         ],
       ),
+
       // ================= BOTTOM NAVIGATION BAR =================
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
@@ -202,15 +208,14 @@ class DashboardAdminPage extends StatelessWidget {
           unselectedFontSize: 10,
           onTap: (index) {
             if (index == 1) {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const PenggunaPage()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const PenggunaPage()));
             } else if (index == 2) {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const AlatPage()));
-            } else if (index == 4) {
-              // TODO: Navigasi ke PeminjamanPage jika sudah dibuat
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => const PeminjamanPage()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AlatPage()));
+            } else if (index == 3) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const kat.KategoriPage()));
             } else if (index == 5) {
-              // TODO: Navigasi ke PengembalianPage jika sudah dibuat
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => const PengembalianPage()));
+              // PERINTAH: Tambahkan navigasi ke LogoutPage pada tab Akun (index 5)
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const LogoutPage()));
             }
           },
           items: const [
@@ -218,15 +223,15 @@ class DashboardAdminPage extends StatelessWidget {
             BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
             BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Produk'),
             BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Peminjaman'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_return_outlined), label: 'Pengembalian'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment_return_outlined), label: 'Akun'),
           ],
         ),
       ),
     );
   }
 
-  // ================= HELPER WIDGETS =================
+  // ================= HELPER WIDGETS (LENGKAP TANPA DIHAPUS) =================
 
   Widget _buildStatCard(BuildContext context,
       {required String title,
@@ -311,7 +316,8 @@ class DashboardAdminPage extends StatelessWidget {
                   Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                   const SizedBox(height: 5),
                   Center(
-                    child: Text(value, style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold)),
+                    child: Text(value,
+                        style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
