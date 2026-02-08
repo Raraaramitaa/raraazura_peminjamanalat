@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// Sesuaikan import ini dengan lokasi file dashboard Anda
+
+// Dashboard sesuai role
 import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/petugas/dashboard_petugas.dart';
 import 'package:peminjam_alat/peminjam/dashboard_peminjam.dart';
@@ -99,13 +100,13 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: Colors.white,
         body: Stack(
           children: [
-            // --- BACKGROUND LENGKUNGAN BAWAH ---
+            // BACKGROUND LENGKUNGAN BAWAH
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
-                height: screenHeight * 0.28, // Sedikit ditingkatkan agar lebih proporsional
+                height: screenHeight * 0.28,
                 decoration: const BoxDecoration(
                   color: Color(0xFF8FAFB6),
                   borderRadius: BorderRadius.only(
@@ -116,13 +117,12 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
 
-            // --- KONTEN UTAMA ---
             SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   children: [
-                    // Header Biru Atas
+                    // HEADER ATAS
                     Container(
                       width: double.infinity,
                       height: 100,
@@ -134,27 +134,30 @@ class _LoginPageState extends State<LoginPage> {
                         'Selamat Datang',
                         style: TextStyle(
                           fontFamily: 'Serif',
-                          fontSize: 28, // Diperkecil sesuai permintaan (sebelumnya 34)
+                          fontSize: 28,
                           color: Colors.white,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 50),
+                    const SizedBox(height: 60),
 
-                    // Logo Aplikasi (DIPERBESAR)
-                    Image.asset(
-                      'assets/images/logo.png',
-                      height: 190, // Diperbesar sesuai permintaan (sebelumnya 150)
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.image, size: 120, color: Colors.grey),
+                    // ================= LOGO (DIPERBESAR) =================
+                    SizedBox(
+                      height: 230, // 🔥 LOGO DIPERBESAR
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.image,
+                                size: 140, color: Colors.grey),
+                      ),
                     ),
+                    // ======================================================
 
                     const SizedBox(height: 20),
 
-                    // Teks Judul
                     const Text(
                       'Pinjam.yuk',
                       style: TextStyle(
@@ -174,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 40),
 
-                    // CARD FORM LOGIN
+                    // CARD LOGIN
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 35),
                       padding: const EdgeInsets.symmetric(
@@ -200,21 +203,23 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 25),
                           _buildTextField(
                             controller: _passwordController,
-                            hint: 'Masukkan Pasword',
+                            hint: 'Masukkan Password',
                             icon: Icons.lock_outline,
                             isPassword: true,
                             obscure: _obscure,
-                            onToggle: () => setState(() => _obscure = !_obscure),
+                            onToggle: () =>
+                                setState(() => _obscure = !_obscure),
                           ),
                           const SizedBox(height: 50),
-                          // Tombol Masuk
+
                           SizedBox(
-                            width: 170, // Sedikit diperlebar agar seimbang
+                            width: 170,
                             height: 48,
                             child: ElevatedButton(
                               onPressed: _loading ? null : _login,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF8FAFB6),
+                                backgroundColor:
+                                    const Color(0xFF8FAFB6),
                                 elevation: 3,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(25),
@@ -244,7 +249,8 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 100), // Ruang bawah agar nyaman di-scroll
+
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -284,7 +290,8 @@ class _LoginPageState extends State<LoginPage> {
         filled: true,
         fillColor: const Color(0xFF8FAFB6),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: const BorderSide(color: Colors.black87, width: 1.2),
