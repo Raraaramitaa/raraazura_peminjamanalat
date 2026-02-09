@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
-// Jika AlatPage ada di file berbeda, pastikan import ini benar:
-// import 'alat.dart'; 
+import 'package:peminjam_alat/auth/logout.dart'; // ✅ Pastikan path benar
 
 class DashboardPeminjamPage extends StatefulWidget {
   const DashboardPeminjamPage({super.key});
@@ -11,16 +9,14 @@ class DashboardPeminjamPage extends StatefulWidget {
 }
 
 class _DashboardPeminjamPageState extends State<DashboardPeminjamPage> {
-  // Variable untuk melacak halaman yang aktif
   int _selectedIndex = 0;
 
-  // List halaman yang akan ditampilkan di dalam body
   final List<Widget> _pages = [
-    const BerandaContent(), // Index 0
-    const AlatPage(),       // Index 1 (Ini halaman Alat yang Anda minta)
-    const Center(child: Text('Halaman Pinjam')),  // Index 2
-    const Center(child: Text('Halaman Kembali')), // Index 3
-    const Center(child: Text('Halaman Profil')),  // Index 4
+    const BerandaContent(),
+    const AlatPage(),
+    const Center(child: Text('Halaman Pinjam')),
+    const Center(child: Text('Halaman Kembali')),
+    const LogoutPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -32,168 +28,191 @@ class _DashboardPeminjamPageState extends State<DashboardPeminjamPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F3F3),
-      // Body akan berubah sesuai index navbar
+      backgroundColor: const Color(0xFFBFD6DB), // Warna latar belakang sesuai gambar
       body: _pages[_selectedIndex],
-      
-      // ================= BOTTOM NAV =================
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFFBFD6DB),
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFF8FAFB6),
+        selectedItemColor: Colors.black,
         unselectedItemColor: Colors.black54,
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'Alat'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Pinjam'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_return_outlined), label: 'Kembali'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.view_in_ar_outlined), activeIcon: Icon(Icons.view_in_ar), label: 'Alat'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), activeIcon: Icon(Icons.assignment), label: 'Pinjam'),
+          BottomNavigationBarItem(icon: Icon(Icons.cached), label: 'Kembali'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: 'Pengaturan'),
         ],
       ),
     );
   }
 }
 
-// ================= HALAMAN BERANDA (KONTEN UTAMA) =================
+// ================= HALAMAN BERANDA =================
 class BerandaContent extends StatelessWidget {
   const BerandaContent({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Profile
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8FAFB6),
-                borderRadius: BorderRadius.circular(16),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // HEADER PROFILE (Header Melengkung Biru Abu-abu)
+          Container(
+            padding: const EdgeInsets.only(top: 60, left: 25, right: 25, bottom: 40),
+            decoration: const BoxDecoration(
+              color: Color(0xFF8FAFB6),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
               ),
-              child: const Row(
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: Colors.black54),
+            ),
+            child: const Row(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Color(0xFFD9D9D9),
+                  child: Icon(Icons.person, color: Colors.black45, size: 35),
+                ),
+                SizedBox(width: 15),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Hallo,Selamat datang',
+                        style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Serif')),
+                    Text('Rara Aramita Azura', style: TextStyle(color: Colors.white, fontSize: 14)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // CARD TOTAL PEMINJAMAN
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Column(
                     children: [
-                      Text('Hallo, Selamat datang', style: TextStyle(color: Colors.white, fontSize: 14)),
-                      SizedBox(height: 4),
-                      Text('Rara Aramita Azura', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Total Peminjaman', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text('3', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: const LinearProgressIndicator(
+                          value: 0.7,
+                          minHeight: 12,
+                          backgroundColor: Color(0xFFD9D9D9),
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8FAFB6)),
+                        ),
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
+                ),
 
-            // Total Peminjaman Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Total Peminjaman', style: TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 6),
-                  const Text('3', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: const LinearProgressIndicator(
-                      value: 0.6,
-                      minHeight: 8,
-                      backgroundColor: Color(0xFFE0E0E0),
-                      valueColor: AlwaysStoppedAnimation(Color(0xFF8FAFB6)),
-                    ),
+                const SizedBox(height: 25),
+
+                // BARIS STATUS (HIJAU & MERAH)
+                Row(
+                  children: [
+                    _buildStatusBox(const Color(0xFF28A745), Icons.check, '1 Selesai'),
+                    const SizedBox(width: 20),
+                    _buildStatusBox(const Color(0xFFEF4444), Icons.warning_amber_rounded, '2 Terlambat'),
+                  ],
+                ),
+
+                const SizedBox(height: 30),
+
+                // LIST STATUS PEMINJAMAN (KOTAK PUTIH)
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Status Row
-            Row(
-              children: [
-                _buildStatusBox(const Color(0xFF28A745), Icons.check_circle, '1 Selesai'),
-                const SizedBox(width: 12),
-                _buildStatusBox(const Color(0xFFDC3545), Icons.warning_rounded, '2 Terlambat'),
+                  child: Column(
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Status Peminjaman', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                          Icon(Icons.assignment_outlined, color: Color(0xFF4A90E2)),
+                        ],
+                      ),
+                      const Divider(height: 30),
+                      _buildPeminjamanItem('Nicon Camera', 'Kembali dalam: 5 hari', Icons.camera_alt),
+                      const Divider(),
+                      _buildPeminjamanItem('Laptop', 'Kembali dalam: 5 hari', Icons.laptop_mac),
+                      const Divider(),
+                      _buildPeminjamanItem('USB', 'Kembali dalam: 5 hari', Icons.usb),
+                    ],
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 20),
-
-            // Section Peminjaman Terakhir
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Status Peminjaman', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                Icon(Icons.assignment, color: Colors.black54),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _itemPeminjaman(title: 'Nikon Camera', subtitle: 'Kembali dalam: 5 hari'),
-            _itemPeminjaman(title: 'Laptop', subtitle: 'Kembali dalam: 5 hari'),
-            _itemPeminjaman(title: 'USB', subtitle: 'Kembali dalam: 5 hari'),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  static Widget _buildStatusBox(Color color, IconData icon, String text) {
+  Widget _buildStatusBox(Color color, IconData icon, String label) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14)),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(15),
+        ),
         child: Column(
           children: [
-            Icon(icon, color: Colors.white, size: 30),
-            const SizedBox(height: 6),
-            Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            Icon(icon, color: Colors.white, size: 40),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
     );
   }
 
-  static Widget _itemPeminjaman({required String title, required String subtitle}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+  Widget _buildPeminjamanItem(String title, String subtitle, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Container(
-            width: 55, height: 55,
-            decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
-            child: const Icon(Icons.image, color: Colors.grey),
+            width: 50, height: 50,
+            decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: Colors.black54),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.green)),
+                Text(subtitle, style: const TextStyle(color: Colors.green, fontSize: 12)),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: const Color(0xFFDDE7EA), borderRadius: BorderRadius.circular(20)),
-            child: const Text('Di Pinjam', style: TextStyle(fontSize: 12)),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(color: const Color(0xFFBCCDCF), borderRadius: BorderRadius.circular(15)),
+            child: const Text('Di Pinjam', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -201,7 +220,7 @@ class BerandaContent extends StatelessWidget {
   }
 }
 
-// ================= HALAMAN ALAT (YANG DIMASUKKAN KE NAVBAR) =================
+// ================= HALAMAN ALAT =================
 class AlatPage extends StatelessWidget {
   const AlatPage({super.key});
 
@@ -209,47 +228,128 @@ class AlatPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header Khusus Alat
+        // HEADER ALAT DENGAN SEARCH BAR
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.only(top: 60, bottom: 30, left: 20, right: 20),
+          padding: const EdgeInsets.only(top: 60, bottom: 30, left: 25, right: 25),
           decoration: const BoxDecoration(
             color: Color(0xFF8FAFB6),
             borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
+              bottomLeft: Radius.circular(40),
+              bottomRight: Radius.circular(40),
             ),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Daftar Alat', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-              Text('Cari dan temukan alat yang kamu butuhkan', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const Row(
+                children: [
+                  CircleAvatar(backgroundColor: Color(0xFFD9D9D9), child: Icon(Icons.person, color: Colors.black45)),
+                  SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Hallo,Selamat datang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('Rara Aramita Azura', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                  )
+                ],
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Cari alat pinjamanmu..',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                ),
+              ),
             ],
           ),
         ),
-        
-        // List Alat (Contoh)
+
+        // FILTER KATEGORI (Laptop, Proyektor, dll)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _buildFilterChip('Laptop', true),
+                _buildFilterChip('Proyektor', false),
+                _buildFilterChip('Kamera', false),
+                _buildFilterChip('Mouse', false),
+              ],
+            ),
+          ),
+        ),
+
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 25),
+          child: Align(alignment: Alignment.centerLeft, child: Text('Rekomendasi untuk kamu', style: TextStyle(fontWeight: FontWeight.bold))),
+        ),
+
+        // LIST ALAT
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: 5,
+            padding: const EdgeInsets.all(20),
+            itemCount: 4,
             itemBuilder: (context, index) {
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  leading: const Icon(Icons.inventory, size: 40, color: Color(0xFF8FAFB6)),
-                  title: Text('Nama Alat #${index + 1}'),
-                  subtitle: const Text('Tersedia: 5 Unit'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+              return Container(
+                margin: const EdgeInsets.only(bottom: 15),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 70, height: 70,
+                      decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(10)),
+                      child: const Icon(Icons.laptop, size: 40),
+                    ),
+                    const SizedBox(width: 15),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('ASUS Zenbook S 16 (UM5606)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text('Laptop', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green, size: 14),
+                              SizedBox(width: 4),
+                              Text('Tersedia', style: TextStyle(color: Colors.green, fontSize: 12)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8FAFB6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                      child: const Text('Lihat Detail', style: TextStyle(fontSize: 10, color: Colors.white)),
+                    )
+                  ],
                 ),
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool isSelected) {
+    return Container(
+      margin: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFF8FAFB6) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+      ),
+      child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
     );
   }
 }
