@@ -1,5 +1,6 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
-import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/petugas/dashboard_petugas.dart';
 import 'package:peminjam_alat/peminjam/dashboard_peminjam.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -74,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => const DashboardAdminPage(),
+            builder: (_) => cons(),
           ),
         );
       } else if (role == 'petugas') {
@@ -245,4 +246,6 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+  
+  cons() {}
 }
