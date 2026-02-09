@@ -5,8 +5,8 @@ import 'package:peminjam_alat/alat/alat.dart';
 import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
 import 'package:peminjam_alat/kategori/kategori.dart' as kat;
-// Menambahkan 'as admin' untuk menghindari bentrok nama class (ambiguous_import)
-import 'package:peminjam_alat/admin/dashboard_admin.dart' as admin; 
+// Pastikan path ini benar sesuai struktur project Anda
+import 'package:peminjam_alat/admin/dashboard_admin.dart' as admin;
 
 class RiwayatPage extends StatefulWidget {
   const RiwayatPage({super.key});
@@ -20,7 +20,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
   String searchQuery = '';
 
   // Data Dummy Riwayat
-  List<Map<String, dynamic>> items = [
+  final List<Map<String, dynamic>> items = [
     {
       'title': 'Roro Armita Azura',
       'subtitle': 'Laptop',
@@ -53,7 +53,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Filter berdasarkan Tab DAN Search Query secara bersamaan
+    // 1. Filter berdasarkan Tab DAN Search Query
     List<Map<String, dynamic>> filteredItems = items.where((item) {
       final matchesTab = (selectedTab == 0) ||
           (selectedTab == 1 && item['status'] == 'Dipinjam') ||
@@ -75,7 +75,11 @@ class _RiwayatPageState extends State<RiwayatPage> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
         ),
         title: const Text(
           'Riwayat Peminjaman',
@@ -129,15 +133,12 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     itemCount: filteredItems.length,
                     itemBuilder: (context, index) {
-                      final item = filteredItems[index];
-                      return _riwayatCard(item);
+                      return _riwayatCard(filteredItems[index]);
                     },
                   ),
           ),
         ],
       ),
-
-      // Bottom Navigation Bar
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           borderRadius: BorderRadius.only(
@@ -149,33 +150,46 @@ class _RiwayatPageState extends State<RiwayatPage> {
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           backgroundColor: const Color(0xFF8FAFB6),
-          currentIndex: 4, // Index Riwayat
+          currentIndex: 4, // Index Riwayat aktif
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.black,
           selectedFontSize: 10,
           unselectedFontSize: 10,
           onTap: (index) {
-            if (index == 0) {
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const admin.DashboardAdminPage()));
-            } else if (index == 1) {
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const PenggunaPage()));
-            } else if (index == 2) {
-              Navigator.pushReplacement(
-                  context, MaterialPageRoute(builder: (_) => const AlatPage()));
-            } else if (index == 3) {
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const kat.KategoriPage()));
-            } else if (index == 5) {
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const LogoutPage()));
+            if (!mounted) return;
+            
+            Widget page;
+            switch (index) {
+              case 0:
+                page = const admin.DashboardAdminPage();
+                break;
+              case 1:
+                page = const PenggunaPage();
+                break;
+              case 2:
+                page = const AlatPage();
+                break;
+              case 3:
+                page = const kat.KategoriPage();
+                break;
+              case 4:
+                return; // Sudah di halaman riwayat
+              case 5:
+                page = const LogoutPage();
+                break;
+              default:
+                return;
             }
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => page),
+            );
           },
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
             BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
-            BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Produk'),
+            BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
             BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
             BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
             BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Keluar'),
@@ -270,9 +284,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
               ),
               const SizedBox(height: 10),
               InkWell(
-                onTap: () {
-                  _konfirmasiHapus(item);
-                },
+                onTap: () => _konfirmasiHapus(item),
                 child: const Text(
                   'Hapus',
                   style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w500),
@@ -292,15 +304,23 @@ class _RiwayatPageState extends State<RiwayatPage> {
         title: const Text('Hapus Riwayat'),
         content: const Text('Apakah Anda yakin ingin menghapus data ini?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
           TextButton(
             onPressed: () {
               setState(() {
                 items.remove(item);
               });
               Navigator.pop(context);
+              
+              if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Data riwayat dihapus')),
+                const SnackBar(
+                  content: Text('Data riwayat dihapus'),
+                  duration: Duration(seconds: 2),
+                ),
               );
             },
             child: const Text('Hapus', style: TextStyle(color: Colors.red)),

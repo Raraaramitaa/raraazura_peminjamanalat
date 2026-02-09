@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:peminjam_alat/auth/logout.dart';
-import 'status.dart'; // Pastikan file ini ada
-// File logout yang ada di bawah
+import 'package:peminjam_alat/petugas/kembalii/pengembalian.dart';
+import 'status.dart'; 
+// ignore: unused_import
+import 'pengembalian.dart'; // Import file pengembalian
 
 class DashboardPetugasPage extends StatefulWidget {
   const DashboardPetugasPage({super.key});
@@ -16,11 +18,11 @@ class _DashboardPetugasPageState extends State<DashboardPetugasPage> {
 
   // List semua halaman yang bisa diakses dari Navbar secara lengkap
   final List<Widget> _pages = [
-    const BerandaContent(), // Halaman Dashboard Utama (Index 0)
-    const StatusPage(),     // Halaman Status (Index 1)
-    const Center(child: Text("Halaman Kembali")), // Halaman Kembali (Index 2)
-    const Center(child: Text("Halaman Laporan")), // Halaman Laporan (Index 3)
-    const LogoutPage(),     // Halaman Pengaturan/Profil (Index 4)
+    const BerandaContent(),     // Index 0
+    const StatusPage(),         // Index 1
+    const PengembalianPage(),   // Index 2 (Sudah dihubungkan ke pengembalian.dart)
+    const Center(child: Text("Halaman Laporan")), // Index 3
+    const LogoutPage(),         // Index 4
   ];
 
   @override
@@ -42,7 +44,7 @@ class _DashboardPetugasPageState extends State<DashboardPetugasPage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
           BottomNavigationBarItem(icon: Icon(Icons.sync_alt), label: 'Status'),
-          BottomNavigationBarItem(icon: Icon(Icons.image), label: 'Kembali'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment_return), label: 'Kembali'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Laporan'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Pengaturan'),
         ],

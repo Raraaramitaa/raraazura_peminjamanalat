@@ -1,15 +1,17 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:peminjam_alat/auth/logout.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:peminjam_alat/kategori/tambah_kategori.dart';
-import 'package:peminjam_alat/kategori/edit_kategori.dart';
-// ignore: unused_import
+
+// Import Halaman Terkait
+import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
 import 'package:peminjam_alat/alat/alat.dart';
-// Aliasing untuk menghindari konflik nama class
+import 'package:peminjam_alat/kategori/tambah_kategori.dart';
+import 'package:peminjam_alat/kategori/edit_kategori.dart';
+
+// Aliasing untuk menghindari konflik nama class jika di file kategori.dart ada class dengan nama sama
 import 'package:peminjam_alat/kategori/kategori.dart' as kat;
 
 // ================= MODEL LOKAL =================
@@ -46,6 +48,7 @@ class _KategoriPageState extends State<KategoriPage> {
 
   // ================= FETCH DATA =================
   Future<void> fetchKategori() async {
+    if (!mounted) return;
     setState(() => loading = true);
     try {
       final response = await supabase.from('kategori').select().order('id_kategori');
@@ -61,7 +64,7 @@ class _KategoriPageState extends State<KategoriPage> {
         loading = false;
       });
     } catch (e) {
-      setState(() => loading = false);
+      if (mounted) setState(() => loading = false);
       debugPrint('Error fetch kategori: $e');
     }
   }
@@ -111,7 +114,7 @@ class _KategoriPageState extends State<KategoriPage> {
                         fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                 ),
-                const SizedBox(width: 48),
+                const SizedBox(width: 48), // Penyeimbang IconButton back
               ],
             ),
           ),
@@ -173,7 +176,7 @@ class _KategoriPageState extends State<KategoriPage> {
                         itemBuilder: (context, index) {
                           final kategori = filteredList[index];
 
-                          // ===== Konversi ke kat.Kategori =====
+                          // Konversi ke model yang dibutuhkan KategoriEditPage
                           final katKategori = kat.Kategori(
                             id: kategori.id,
                             nama: kategori.nama,
@@ -224,8 +227,7 @@ class _KategoriPageState extends State<KategoriPage> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) =>
-                                              KategoriEditPage(kategori: katKategori),
+                                          builder: (_) => KategoriEditPage(kategori: katKategori),
                                         ),
                                       ).then((_) => fetchKategori());
                                     }),
@@ -247,28 +249,42 @@ class _KategoriPageState extends State<KategoriPage> {
         ],
       ),
 
-      // ================= BOTTOM NAVIGATION BAR =================
+      // ================= BOTTOM NAVIGATION BAR (FIXED) =================
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF8FAFB6),
-        currentIndex: 3,
+        currentIndex: 3, // Index Kategori
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.black,
         selectedFontSize: 10,
         unselectedFontSize: 10,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacement(context,
-                MaterialPageRoute(builder: (_) => KatDashboard_AdminPage()));
-          } else if (index == 1) {
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (_) => const PenggunaPage()));
-          } else if (index == 2) {
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (_) => const AlatPage()));
-          } else if (index == 5) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const LogoutPage()));
+          if (index == 3) return; // Tetap di sini jika menekan kategori
+
+          switch (index) {
+            case 0:
+              // Kembali ke Dashboard dan hapus stack navigasi agar navbar tidak tumpuk
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const DashboardAdminPage()),
+                (route) => false,
+              );
+              break;
+            case 1:
+              Navigator.pushReplacement(
+                  context, MaterialPageRoute(builder: (_) => const PenggunaPage()));
+              break;
+            case 2:
+              Navigator.pushReplacement(
+                  context, MaterialPageRoute(builder: (_) => const AlatPage()));
+              break;
+            case 4:
+              // Tambahkan navigasi Riwayat di sini jika sudah ada filenya
+              break;
+            case 5:
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (_) => const LogoutPage()));
+              break;
           }
         },
         items: const [
@@ -334,8 +350,4 @@ class _KategoriPageState extends State<KategoriPage> {
       ),
     );
   }
-}
-
-// ignore: non_constant_identifier_names
-KatDashboard_AdminPage() {
 }

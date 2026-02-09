@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:peminjam_alat/auth/logout.dart'; // ✅ Pastikan path benar
+import 'package:peminjam_alat/auth/logout.dart';
+import 'package:peminjam_alat/peminjam/pinjam/pinjam_alat.dart'; 
+// Import file pinjam_alat
+// ignore: unused_import
+import 'package:peminjam_alat/pengguna/pinjam_alat.dart'; // ✅ Sesuaikan path file pinjam_alat.dart Anda
 
 class DashboardPeminjamPage extends StatefulWidget {
   const DashboardPeminjamPage({super.key});
@@ -11,10 +15,11 @@ class DashboardPeminjamPage extends StatefulWidget {
 class _DashboardPeminjamPageState extends State<DashboardPeminjamPage> {
   int _selectedIndex = 0;
 
+  // Update List Halaman
   final List<Widget> _pages = [
     const BerandaContent(),
     const AlatPage(),
-    const Center(child: Text('Halaman Pinjam')),
+    const PinjamAlatPage(), // ✅ Sekarang memanggil halaman pinjam_alat
     const Center(child: Text('Halaman Kembali')),
     const LogoutPage(),
   ];
@@ -28,14 +33,14 @@ class _DashboardPeminjamPageState extends State<DashboardPeminjamPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFBFD6DB), // Warna latar belakang sesuai gambar
+      backgroundColor: const Color(0xFFBFD6DB), 
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFFBFD6DB),
+        backgroundColor: const Color(0xFF8FAFB6), // Disamakan dengan warna header agar konsisten
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Colors.black,
+        selectedItemColor: Colors.white,
         unselectedItemColor: Colors.black54,
         selectedFontSize: 12,
         unselectedFontSize: 12,
@@ -60,7 +65,6 @@ class BerandaContent extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // HEADER PROFILE (Header Melengkung Biru Abu-abu)
           Container(
             padding: const EdgeInsets.only(top: 60, left: 25, right: 25, bottom: 40),
             decoration: const BoxDecoration(
@@ -94,7 +98,6 @@ class BerandaContent extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                // CARD TOTAL PEMINJAMAN
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -126,7 +129,6 @@ class BerandaContent extends StatelessWidget {
 
                 const SizedBox(height: 25),
 
-                // BARIS STATUS (HIJAU & MERAH)
                 Row(
                   children: [
                     _buildStatusBox(const Color(0xFF28A745), Icons.check, '1 Selesai'),
@@ -137,7 +139,6 @@ class BerandaContent extends StatelessWidget {
 
                 const SizedBox(height: 30),
 
-                // LIST STATUS PEMINJAMAN (KOTAK PUTIH)
                 Container(
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
@@ -228,7 +229,6 @@ class AlatPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // HEADER ALAT DENGAN SEARCH BAR
         Container(
           width: double.infinity,
           padding: const EdgeInsets.only(top: 60, bottom: 30, left: 25, right: 25),
@@ -269,7 +269,6 @@ class AlatPage extends StatelessWidget {
           ),
         ),
 
-        // FILTER KATEGORI (Laptop, Proyektor, dll)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: SingleChildScrollView(
@@ -291,7 +290,6 @@ class AlatPage extends StatelessWidget {
           child: Align(alignment: Alignment.centerLeft, child: Text('Rekomendasi untuk kamu', style: TextStyle(fontWeight: FontWeight.bold))),
         ),
 
-        // LIST ALAT
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(20),

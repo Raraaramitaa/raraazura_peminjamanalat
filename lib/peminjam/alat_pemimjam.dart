@@ -1,4 +1,7 @@
+// ignore_for_file: prefer_const_constructors, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlatPage extends StatefulWidget {
   const AlatPage({super.key});
@@ -8,19 +11,79 @@ class AlatPage extends StatefulWidget {
 }
 
 class _AlatPageState extends State<AlatPage> {
-  final List<String> categories = ['Laptop', 'Proyektor', 'Kamera', 'Mouse'];
+  // Inisialisasi Supabase Client
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  // State Management
+  List<Map<String, dynamic>> allAlat = [];
+  List<Map<String, dynamic>> filteredAlat = [];
+  bool isLoading = true;
+
+  final List<String> categories = ['Semua', 'Laptop', 'Proyektor', 'Kamera', 'Mouse'];
   int selectedCategoryIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchDataAlat();
+  }
+
+  // ================= DATA FETCHING (DARI SUPABASE) =================
+  Future<void> fetchDataAlat() async {
+    setState(() => isLoading = true);
+    try {
+      // Mengambil data dari tabel 'alat' di Supabase
+      // Pastikan nama tabel di Supabase Anda adalah 'alat'
+      final data = await supabase
+          .from('alat')
+          .select()
+          .order('nama_alat', ascending: true);
+
+      setState(() {
+        allAlat = List<Map<String, dynamic>>.from(data);
+        // Jalankan filter pertama kali untuk sinkronisasi kategori 'Semua'
+        _applyFilters(); 
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Gagal mengambil data: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ================= LOGIKA FILTER (PENCARIAN & KATEGORI) =================
+  void _applyFilters() {
+    final query = _searchController.text.toLowerCase();
+    final selectedCat = categories[selectedCategoryIndex];
+
+    setState(() {
+      filteredAlat = allAlat.where((item) {
+        final name = (item['nama_alat'] ?? '').toString().toLowerCase();
+        final category = (item['kategori'] ?? '').toString();
+
+        bool matchQuery = name.contains(query);
+        bool matchCategory = selectedCat == 'Semua' || category == selectedCat;
+
+        return matchQuery && matchCategory;
+      }).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Warna background sesuai gambar (abu-biru pucat)
-      backgroundColor: const Color(0xFFBFD6DB), 
+      backgroundColor: const Color(0xFFBFD6DB),
       body: Column(
         children: [
           // ================= HEADER AREA =================
           Container(
-            padding: const EdgeInsets.only(top: 60, bottom: 25, left: 25, right: 25),
+            padding: const EdgeInsets.fromLTRB(25, 60, 25, 25),
             decoration: const BoxDecoration(
               color: Color(0xFF8FAFB6),
               borderRadius: BorderRadius.only(
@@ -30,8 +93,8 @@ class _AlatPageState extends State<AlatPage> {
             ),
             child: Column(
               children: [
-                const Row(
-                  children: [
+                Row(
+                  children: const [
                     CircleAvatar(
                       radius: 22,
                       backgroundColor: Colors.white,
@@ -44,7 +107,6 @@ class _AlatPageState extends State<AlatPage> {
                         Text(
                           'Hallo, Selamat datang',
                           style: TextStyle(
-                            fontFamily: 'serif', // Menggunakan font serif sesuai gambar
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
@@ -52,17 +114,14 @@ class _AlatPageState extends State<AlatPage> {
                         ),
                         Text(
                           'Rara Aramita Azura',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 25),
-                // Search Bar dengan bayangan lembut
+                // Search Bar
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -75,7 +134,9 @@ class _AlatPageState extends State<AlatPage> {
                       ),
                     ],
                   ),
-                  child: const TextField(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) => _applyFilters(),
                     decoration: InputDecoration(
                       hintText: 'Cari alat pinjamanmu...',
                       hintStyle: TextStyle(color: Colors.black38, fontSize: 14),
@@ -103,7 +164,12 @@ class _AlatPageState extends State<AlatPage> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: GestureDetector(
-                    onTap: () => setState(() => selectedCategoryIndex = index),
+                    onTap: () {
+                      setState(() {
+                        selectedCategoryIndex = index;
+                        _applyFilters();
+                      });
+                    },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 22),
                       alignment: Alignment.center,
@@ -134,13 +200,12 @@ class _AlatPageState extends State<AlatPage> {
 
           const SizedBox(height: 25),
 
-          // ================= SECTION TITLE =================
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 25),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Rekomendasi untuk kamu',
+                'Daftar Alat Tersedia',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -152,45 +217,57 @@ class _AlatPageState extends State<AlatPage> {
 
           const SizedBox(height: 15),
 
-          // ================= PRODUCT LIST =================
+          // ================= PRODUCT LIST (DYNAMIS) =================
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: 4,
-              itemBuilder: (context, index) {
-                return _buildProductCard();
-              },
+            child: RefreshIndicator(
+              onRefresh: fetchDataAlat,
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredAlat.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "Alat tidak ditemukan atau data kosong",
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: filteredAlat.length,
+                          itemBuilder: (context, index) {
+                            final item = filteredAlat[index];
+                            return _buildProductCard(item);
+                          },
+                        ),
             ),
           ),
         ],
       ),
 
       // ================= BOTTOM NAV BAR =================
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.black12, width: 0.5)),
-        ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFFBFD6DB),
-          selectedItemColor: Colors.black,
-          unselectedItemColor: Colors.black87,
-          currentIndex: 1, // Fokus pada menu Alat
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
-            BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Pinjam'),
-            BottomNavigationBarItem(icon: Icon(Icons.sync_alt), label: 'Kembali'),
-            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Pengaturan'),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFFBFD6DB),
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black54,
+        currentIndex: 1, // Fokus pada tab Alat
+        onTap: (index) {
+          // Tambahkan logika navigasi antar halaman di sini
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Pinjam'),
+          BottomNavigationBarItem(icon: Icon(Icons.sync_alt), label: 'Kembali'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Pengaturan'),
+        ],
       ),
     );
   }
 
-  Widget _buildProductCard() {
+  Widget _buildProductCard(Map<String, dynamic> item) {
+    // Pastikan nilai status sensitif terhadap case di database (Tersedia / tersedia)
+    bool isAvailable = (item['status']?.toString().toLowerCase() ?? '') == 'tersedia';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.all(12),
@@ -208,15 +285,25 @@ class _AlatPageState extends State<AlatPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gambar Produk (Menggunakan Placeholder Icon agar tidak error)
+          // Gambar Produk dari URL Supabase Storage atau link eksternal
           Container(
             width: 85,
             height: 85,
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.laptop_mac, size: 50, color: Colors.black87),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: item['foto_url'] != null && item['foto_url'] != ""
+                  ? Image.network(
+                      item['foto_url'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                    )
+                  : const Icon(Icons.inventory_2, size: 40, color: Colors.black45),
+            ),
           ),
           const SizedBox(width: 15),
           // Info Produk
@@ -224,35 +311,41 @@ class _AlatPageState extends State<AlatPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'ASUS Zenbook S 16 (UM5606)',
-                  style: TextStyle(
+                Text(
+                  item['nama_alat'] ?? 'Tanpa Nama',
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: Colors.black87,
                   ),
                 ),
-                const Text(
-                  'Laptop',
-                  style: TextStyle(color: Colors.black54, fontSize: 12),
+                Text(
+                  item['kategori'] ?? 'Tanpa Kategori',
+                  style: const TextStyle(color: Colors.black54, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
-                // Badge Tersedia
+                // Badge Status
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: isAvailable 
+                        ? Colors.green.withOpacity(0.1) 
+                        : Colors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green, size: 14),
-                      SizedBox(width: 4),
+                      Icon(
+                        isAvailable ? Icons.check_circle : Icons.cancel,
+                        color: isAvailable ? Colors.green : Colors.red,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        'Tersedia',
+                        item['status'] ?? 'Tidak Diketahui',
                         style: TextStyle(
-                          color: Colors.green,
+                          color: isAvailable ? Colors.green : Colors.red,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -261,18 +354,19 @@ class _AlatPageState extends State<AlatPage> {
                   ),
                 ),
                 const SizedBox(height: 5),
-                // Tombol Detail di kanan bawah card
+                // Tombol Detail
                 Align(
                   alignment: Alignment.bottomRight,
                   child: SizedBox(
                     height: 28,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        // Navigasi ke halaman detail dengan membawa data 'item'
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8FAFB6),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
                         ),

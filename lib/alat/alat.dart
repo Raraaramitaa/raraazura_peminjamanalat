@@ -1,17 +1,18 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:peminjam_alat/auth/logout.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'tambah_alat.dart';
 import 'edit_alat.dart';
+
+import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
 import 'package:peminjam_alat/kategori/kategori.dart' as kat;
 
 // =========================================================
-// 1. WIDGET DIALOG HAPUS
+// DIALOG HAPUS
 // =========================================================
 class HapusAlatDialog extends StatelessWidget {
   final VoidCallback onConfirm;
@@ -33,7 +34,10 @@ class HapusAlatDialog extends StatelessWidget {
             onConfirm();
             Navigator.pop(context);
           },
-          child: const Text("Hapus", style: TextStyle(color: Colors.red)),
+          child: const Text(
+            "Hapus",
+            style: TextStyle(color: Colors.red),
+          ),
         ),
       ],
     );
@@ -41,17 +45,21 @@ class HapusAlatDialog extends StatelessWidget {
 }
 
 // =========================================================
-// 2. PLACEHOLDER HALAMAN PEMINJAMAN
+// HALAMAN RIWAYAT / PEMINJAMAN (SATU SAJA)
 // =========================================================
 class PeminjamanPage extends StatelessWidget {
   const PeminjamanPage({super.key});
+
   @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: Text("Halaman Peminjaman")));
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text("Halaman Riwayat Peminjaman")),
+    );
+  }
 }
 
 // =========================================================
-// 3. MAIN PAGE: ALAT PAGE
+// HALAMAN ALAT
 // =========================================================
 class AlatPage extends StatefulWidget {
   const AlatPage({super.key});
@@ -65,6 +73,7 @@ class _AlatPageState extends State<AlatPage> {
 
   List<Map<String, dynamic>> alatList = [];
   List<Map<String, dynamic>> filteredAlatList = [];
+
   bool isLoading = true;
   final int _currentIndex = 2;
 
@@ -75,9 +84,7 @@ class _AlatPageState extends State<AlatPage> {
   void initState() {
     super.initState();
     fetchAlat();
-    _searchController.addListener(() {
-      _applyFilters();
-    });
+    _searchController.addListener(_applyFilters);
   }
 
   @override
@@ -86,71 +93,56 @@ class _AlatPageState extends State<AlatPage> {
     super.dispose();
   }
 
+  // =========================================================
+  // FETCH & FILTER
+  // =========================================================
+  Future<void> fetchAlat() async {
+    setState(() => isLoading = true);
+    try {
+      final data = await supabase
+          .from('alat')
+          .select()
+          .order('id_alat', ascending: true);
+
+      alatList = List<Map<String, dynamic>>.from(data as List);
+      _applyFilters();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Gagal memuat data: $e")),
+      );
+    }
+    setState(() => isLoading = false);
+  }
+
   void _applyFilters() {
-    String query = _searchController.text.toLowerCase();
+    final query = _searchController.text.toLowerCase();
+
     setState(() {
       filteredAlatList = alatList.where((alat) {
-        final namaAlat = (alat['nama_alat'] ?? '').toString().toLowerCase();
-        final kategoriAlat = (alat['kategori'] ?? '').toString();
-        bool matchesSearch = namaAlat.contains(query);
-        bool matchesKategori =
-            (_selectedKategori == "Semua") || (kategoriAlat == _selectedKategori);
-        return matchesSearch && matchesKategori;
+        final nama = (alat['nama_alat'] ?? '').toString().toLowerCase();
+        final kategori = (alat['kategori'] ?? '').toString();
+
+        return nama.contains(query) &&
+            (_selectedKategori == "Semua" ||
+                kategori == _selectedKategori);
       }).toList();
     });
   }
 
-  Future<void> fetchAlat() async {
-    if (!mounted) return;
-    setState(() => isLoading = true);
-    try {
-      final data =
-          await supabase.from('alat').select().order('id_alat', ascending: true);
-      if (mounted) {
-        setState(() {
-          alatList = List<Map<String, dynamic>>.from(data as List);
-          _applyFilters();
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("ERROR FETCH ALAT: $e");
-      if (mounted) {
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Gagal memuat data: $e")));
-      }
-    }
-  }
-
-  Future<void> hapusAlat(dynamic id) async {
-    try {
-      await supabase.from('alat').delete().eq('id_alat', id);
-      if (mounted) {
-        fetchAlat();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Alat berhasil dihapus"),
-          backgroundColor: Colors.green,
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Gagal menghapus: $e"),
-          backgroundColor: Colors.red,
-        ));
-      }
-    }
-  }
-
-  Future<void> _navigateToTambahAlat() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => TambahAlatPage(imageFile: null)),
-    );
+  Future<void> hapusAlat(int id) async {
+    await supabase.from('alat').delete().eq('id_alat', id);
     fetchAlat();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Alat berhasil dihapus"),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
+  // =========================================================
+  // NAVBAR
+  // =========================================================
   void _onNavTapped(int index) {
     if (index == _currentIndex) return;
 
@@ -177,13 +169,21 @@ class _AlatPageState extends State<AlatPage> {
       default:
         return;
     }
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => page),
+    );
   }
 
+  // =========================================================
+  // UI
+  // =========================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       body: Column(
         children: [
           // HEADER
@@ -199,23 +199,24 @@ class _AlatPageState extends State<AlatPage> {
             child: Column(
               children: [
                 const Text("Admin",
-                    style: TextStyle(color: Colors.white, fontSize: 14)),
-                const SizedBox(height: 5),
+                    style: TextStyle(color: Colors.white)),
+                const SizedBox(height: 6),
                 const CircleAvatar(
-                  radius: 25,
+                  radius: 26,
                   backgroundColor: Colors.white54,
-                  child: Icon(Icons.person, size: 30, color: Colors.white),
+                  child: Icon(Icons.person, color: Colors.white),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 6),
                 const Text(
                   "Rara Aramita Azura",
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 16),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-                const SizedBox(height: 20),
-                // BAR PENCARIAN
+                const SizedBox(height: 15),
+
+                // SEARCH
                 Container(
                   height: 45,
                   decoration: BoxDecoration(
@@ -224,11 +225,9 @@ class _AlatPageState extends State<AlatPage> {
                   ),
                   child: TextField(
                     controller: _searchController,
-                    textAlignVertical: TextAlignVertical.center,
                     decoration: InputDecoration(
-                      hintText: "Cari Barang...",
-                      prefixIcon:
-                          const Icon(Icons.search, color: Color(0xFF8FAFB6)),
+                      hintText: "Cari Alat...",
+                      prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear),
@@ -236,8 +235,6 @@ class _AlatPageState extends State<AlatPage> {
                             )
                           : null,
                       border: InputBorder.none,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 20),
                     ),
                   ),
                 ),
@@ -245,44 +242,43 @@ class _AlatPageState extends State<AlatPage> {
             ),
           ),
 
-          // AREA FILTER KATEGORI
+          // FILTER KATEGORI
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 15),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterIcon("Semua", Icons.grid_view, "Semua"),
-                  _buildFilterIcon("Laptop", Icons.laptop_mac, "Laptop"),
-                  _buildFilterIcon("Proyektor", Icons.videocam_outlined, "Proyektor"),
-                  _buildFilterIcon("Camera", Icons.camera_alt_outlined, "Camera"),
-                  _buildFilterIcon("Mouse", Icons.mouse_outlined, "Mouse"),
+                  _filterIcon("Semua", Icons.grid_view, "Semua"),
+                  _filterIcon("Laptop", Icons.laptop, "Laptop"),
+                  _filterIcon("Proyektor", Icons.videocam, "Proyektor"),
+                  _filterIcon("Camera", Icons.camera_alt, "Camera"),
+                  _filterIcon("Mouse", Icons.mouse, "Mouse"),
                 ],
               ),
             ),
           ),
-          const Divider(thickness: 1, height: 1),
 
-          // AREA DAFTAR BARANG
+          const Divider(),
+
+          // GRID
           Expanded(
             child: isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                        color: Color(0xFF8FAFB6)))
+                ? const Center(child: CircularProgressIndicator())
                 : filteredAlatList.isEmpty
-                    ? _buildEmptyState()
+                    ? _emptyState()
                     : GridView.builder(
                         padding: const EdgeInsets.all(15),
                         itemCount: filteredAlatList.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
+                          childAspectRatio: 0.7,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 0.70,
                         ),
-                        itemBuilder: (context, index) =>
-                            _buildItemCard(filteredAlatList[index]),
+                        itemBuilder: (_, i) =>
+                            _alatCard(filteredAlatList[i]),
                       ),
           ),
         ],
@@ -290,148 +286,139 @@ class _AlatPageState extends State<AlatPage> {
 
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF8FAFB6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        onPressed: _navigateToTambahAlat,
-        child: const Icon(Icons.add, color: Colors.white, size: 35),
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TambahAlatPage(imageFile: null),
+            ),
+          );
+          fetchAlat();
+        },
+        child: const Icon(Icons.add),
       ),
 
+      // NAVBAR ADMIN (SAMA DENGAN DASHBOARD)
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF8FAFB6),
         currentIndex: _currentIndex,
+        onTap: _onNavTapped,
+        backgroundColor: const Color(0xFF8FAFB6),
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.black,
-        selectedFontSize: 10,
-        unselectedFontSize: 10,
-        onTap: _onNavTapped,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Produk'),
-          BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_return_outlined), label: 'Akun'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined), label: 'Beranda'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline), label: 'Pengguna'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.category_outlined), label: 'Kategori'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle_outlined), label: 'Akun'),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 10),
-          Text("Alat tidak ditemukan", style: TextStyle(color: Colors.grey)),
-        ],
+  // =========================================================
+  // WIDGET BANTUAN
+  // =========================================================
+  Widget _emptyState() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: const [
+        Icon(Icons.search_off, size: 80, color: Colors.grey),
+        SizedBox(height: 10),
+        Text("Alat tidak ditemukan"),
+      ],
+    );
+  }
+
+  Widget _filterIcon(String label, IconData icon, String key) {
+    final selected = _selectedKategori == key;
+    return GestureDetector(
+      onTap: () {
+        _selectedKategori = key;
+        _applyFilters();
+      },
+      child: Container(
+        width: 80,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: selected
+                    ? const Color(0xFF4A6A70)
+                    : const Color(0xFF8FAFB6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: Colors.white),
+            ),
+            const SizedBox(height: 5),
+            Text(label, style: const TextStyle(fontSize: 10)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildItemCard(Map<String, dynamic> item) {
-    String? imageUrl = item['foto_url']?.toString();
-
+  Widget _alatCard(Map<String, dynamic> item) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+          BoxShadow(color: Colors.black12, blurRadius: 4),
         ],
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Stack(
         children: [
           Column(
             children: [
-              // AREA FOTO
               Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(15)),
-                  ),
-                  child: (imageUrl != null && imageUrl.isNotEmpty)
-                      ? ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(15)),
-                          child: Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(
-                                child: Icon(Icons.broken_image,
-                                    size: 40, color: Colors.grey),
-                              );
-                            },
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            },
-                          ),
-                        )
-                      : const Center(
-                          child:
-                              Icon(Icons.image, size: 40, color: Colors.grey),
-                        ),
-                ),
+                child: item['foto_url'] != null
+                    ? Image.network(item['foto_url'], fit: BoxFit.cover)
+                    : const Icon(Icons.image, size: 40),
               ),
-              // NAMA ALAT
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                padding: const EdgeInsets.all(6),
                 child: Text(
-                  item['nama_alat'] ?? "Tanpa Nama",
-                  textAlign: TextAlign.center,
+                  item['nama_alat'] ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ),
-              // LABEL STATUS
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8FAFB6),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  item['status'] ?? "Ada",
-                  style: const TextStyle(color: Colors.white, fontSize: 9),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
-          // TOMBOL EDIT
           Positioned(
-            top: 5,
-            right: 5,
+            top: 6,
+            right: 6,
             child: GestureDetector(
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => EditAlatPage(data: item)),
-                ).then((_) => fetchAlat());
+                  MaterialPageRoute(
+                    builder: (_) => EditAlatPage(data: item),
+                  ),
+                );
+                fetchAlat();
               },
               child: const CircleAvatar(
                 radius: 12,
-                backgroundColor: Colors.white70,
-                child: Icon(Icons.edit, size: 14, color: Colors.blueGrey),
+                child: Icon(Icons.edit, size: 14),
               ),
             ),
           ),
-          // TOMBOL HAPUS
           Positioned(
-            top: 5,
-            left: 5,
+            top: 6,
+            left: 6,
             child: GestureDetector(
               onTap: () {
                 showDialog(
@@ -443,50 +430,13 @@ class _AlatPageState extends State<AlatPage> {
               },
               child: const CircleAvatar(
                 radius: 12,
-                backgroundColor: Colors.white70,
+                backgroundColor: Colors.redAccent,
                 child:
-                    Icon(Icons.delete_outline, size: 14, color: Colors.redAccent),
+                    Icon(Icons.delete, size: 14, color: Colors.white),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterIcon(String label, IconData icon, String kategoriKey) {
-    bool isSelected = _selectedKategori == kategoriKey;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedKategori = kategoriKey;
-          _applyFilters();
-        });
-      },
-      child: Container(
-        width: 80,
-        margin: const EdgeInsets.symmetric(horizontal: 5),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color:
-                    isSelected ? const Color(0xFF4A6A70) : const Color(0xFF8FAFB6),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: Colors.white, size: 28),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

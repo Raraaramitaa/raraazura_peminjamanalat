@@ -1,15 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditPenggunaPage extends StatefulWidget {
-  const EditPenggunaPage({super.key});
+  final Map<String, dynamic> userData;
+
+  const EditPenggunaPage({super.key, required this.userData});
 
   @override
   State<EditPenggunaPage> createState() => _EditPenggunaPageState();
 }
 
 class _EditPenggunaPageState extends State<EditPenggunaPage> {
+  final SupabaseClient supabase = Supabase.instance.client;
+  
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  
   bool _obscure = true;
+  bool _isLoading = false;
   String _jenisAkun = 'Peminjam';
+
+  @override
+  void initState() {
+    super.initState();
+    // Mengambil data lama dari widget.userData
+    _emailController = TextEditingController(text: widget.userData['email']?.toString() ?? '');
+    _passwordController = TextEditingController();
+    
+    // Set value awal dropdown berdasarkan data role di database
+    String roleAwal = widget.userData['role']?.toString().toLowerCase() ?? 'peminjam';
+    if (roleAwal == 'admin') {
+      _jenisAkun = 'Admin';
+    } else if (roleAwal == 'petugas') {
+      _jenisAkun = 'Petugas';
+    } else {
+      _jenisAkun = 'Peminjam';
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updatePengguna() async {
+    if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email wajib diisi!')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await supabase.from('profiles').update({
+        'email': _emailController.text.trim(),
+        'role': _jenisAkun.toLowerCase(),
+      }).eq('id', widget.userData['id']);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Perubahan berhasil disimpan'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context, true); // Mengirim sinyal 'true' untuk refresh data di halaman daftar
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memperbarui: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,42 +81,54 @@ class _EditPenggunaPageState extends State<EditPenggunaPage> {
       backgroundColor: const Color(0xFFBFD6DB),
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAFB6),
+        title: const Text('Edit Pengguna', style: TextStyle(color: Colors.white)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Edit Pengguna'),
-        elevation: 0,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFBFD6DB),
-            borderRadius: BorderRadius.circular(25),
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _field(label: 'Nama', value: 'Rara Aramita'),
-              _field(label: 'Email', value: 'peminjam@gmail.com'),
-              _passwordField(),
-              _dropdownField(),
-              const SizedBox(height: 25),
+              const Text("Email Pengguna", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildTextField(controller: _emailController, hint: "Email", icon: Icons.email),
+              
+              const SizedBox(height: 20),
+              const Text("Sandi (Opsional)", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildPasswordField(),
+              
+              const SizedBox(height: 20),
+              const Text("Role Akun", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildDropdown(),
+              
+              const SizedBox(height: 30),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _button(
-                    text: 'Batal',
-                    color: Colors.grey.shade300,
-                    textColor: Colors.black,
-                    onTap: () => Navigator.pop(context),
+                  Expanded(
+                    child: _buildButton(
+                      text: 'Batal',
+                      color: Colors.grey.shade400,
+                      onTap: () => Navigator.pop(context),
+                    ),
                   ),
-                  _button(
-                    text: 'Simpan',
-                    color: const Color(0xFF8FAFB6),
-                    textColor: Colors.white,
-                    onTap: () => Navigator.pop(context),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: _buildButton(
+                      text: _isLoading ? '...' : 'Simpan',
+                      color: const Color(0xFF8FAFB6),
+                      onTap: _isLoading ? null : _updatePengguna,
+                    ),
                   ),
                 ],
               )
@@ -63,153 +139,65 @@ class _EditPenggunaPageState extends State<EditPenggunaPage> {
     );
   }
 
-  // ================= FIELD =================
+  Widget _buildTextField({required TextEditingController controller, required String hint, required IconData icon}) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: const Color(0xFF8FAFB6)),
+        hintText: hint,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+    );
+  }
 
-  Widget _field({required String label, required String value}) {
+  Widget _buildPasswordField() {
+    return TextField(
+      controller: _passwordController,
+      obscureText: _obscure,
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.lock, color: Color(0xFF8FAFB6)),
+        hintText: "Isi jika ingin ganti sandi",
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        suffixIcon: IconButton(
+          icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+          onPressed: () => setState(() => _obscure = !_obscure),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(width: 10),
-          const Text(':'),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(value),
-          ),
-        ],
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _jenisAkun,
+          isExpanded: true,
+          items: const ['Peminjam', 'Petugas', 'Admin'].map((String val) {
+            return DropdownMenuItem(value: val, child: Text(val));
+          }).toList(),
+          onChanged: (val) => setState(() => _jenisAkun = val!),
+        ),
       ),
     );
   }
 
-  Widget _passwordField() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+  Widget _buildButton({required String text, required Color color, required VoidCallback? onTap}) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
-      child: Row(
-        children: [
-          const Text(
-            'Sandi',
-            style: TextStyle(fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(width: 10),
-          const Text(':'),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              obscureText: _obscure,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                hintText: 'raraazura',
-              ),
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              _obscure ? Icons.visibility_off : Icons.visibility,
-            ),
-            onPressed: () {
-              setState(() => _obscure = !_obscure);
-            },
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _dropdownField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.blue),
-          ),
-          child: Row(
-            children: [
-              const Text(
-                'Jenis akun',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 10),
-              const Text(':'),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(_jenisAkun),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _jenisAkun,
-              isExpanded: true,
-              items: const [
-                DropdownMenuItem(
-                  value: 'Peminjam',
-                  child: Text('Peminjam'),
-                ),
-                DropdownMenuItem(
-                  value: 'Petugas',
-                  child: Text('Petugas'),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() => _jenisAkun = value!);
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ================= BUTTON =================
-
-  Widget _button({
-    required String text,
-    required Color color,
-    required Color textColor,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: 120,
-      height: 45,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        onPressed: onTap,
-        child: Text(
-          text,
-          style: TextStyle(color: textColor),
-        ),
-      ),
+      onPressed: onTap,
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
 }
