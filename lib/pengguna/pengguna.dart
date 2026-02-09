@@ -1,7 +1,6 @@
 // ignore_for_file: prefer_typing_uninitialized_variables, non_constant_identifier_names
 
 import 'package:flutter/material.dart';
-
 import 'tambah_pengguna.dart';
 import 'edit_pengguna.dart';
 import 'hapus_pengguna.dart';
@@ -61,19 +60,15 @@ class _PenggunaPageState extends State<PenggunaPage> {
                     ],
                   ),
                 ),
-                // Tombol edit
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.blue),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const EditPenggunaPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const EditPenggunaPage()),
                     );
                   },
                 ),
-                // Tombol hapus
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () {
@@ -95,16 +90,37 @@ class _PenggunaPageState extends State<PenggunaPage> {
           );
         },
       ),
-      // Tombol tambah pengguna
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF8FAFB6),
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          // 1. Menunggu hasil dari halaman tambah menggunakan 'await'
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => const TambahPenggunaPage(),
             ),
           );
+
+          // 2. Cek jika result tidak null (artinya tombol simpan ditekan)
+          if (result != null && result is UserData) {
+            setState(() {
+              // Menambahkan data baru ke dalam list
+              pengguna.add({
+                'role': result.sebagai,
+                'nama': result.nama,
+                'email': result.email,
+              });
+            });
+
+            // Tampilkan snackbar sukses di halaman ini
+            // ignore: use_build_context_synchronously
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✅ ${result.nama} berhasil ditambahkan!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         },
         child: const Icon(Icons.add),
       ),

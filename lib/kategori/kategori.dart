@@ -1,10 +1,29 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
+import 'package:peminjam_alat/auth/logout.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:peminjam_alat/kategori/tambah_kategori.dart';
+import 'package:peminjam_alat/kategori/edit_kategori.dart';
+// ignore: unused_import
+import 'package:peminjam_alat/admin/dashboard_admin.dart';
+import 'package:peminjam_alat/pengguna/pengguna.dart';
+import 'package:peminjam_alat/alat/alat.dart';
+// Aliasing untuk menghindari konflik nama class
+import 'package:peminjam_alat/kategori/kategori.dart' as kat;
 
-import 'edit_kategori.dart';
-import 'hapus_kategori.dart';
-import 'tambah_kategori.dart';
+// ================= MODEL LOKAL =================
+class Kategori {
+  final int id;
+  String nama;
+  String? gambarUrl;
 
+  Kategori({required this.id, required this.nama, this.gambarUrl, String? gambarPath});
+
+  String? get gambarPath => null;
+}
+
+// ================= PAGE =================
 class KategoriPage extends StatefulWidget {
   const KategoriPage({super.key});
 
@@ -25,31 +44,39 @@ class _KategoriPageState extends State<KategoriPage> {
     fetchKategori();
   }
 
+  // ================= FETCH DATA =================
   Future<void> fetchKategori() async {
     setState(() => loading = true);
-
-    final data = await supabase
-        .from('kategori')
-        .select()
-        .order('id_kategori');
-
-    kategoriList = (data as List)
-        .map(
-          (e) => Kategori(
+    try {
+      final response = await supabase.from('kategori').select().order('id_kategori');
+      final List data = response as List;
+      setState(() {
+        kategoriList = data.map((e) {
+          return Kategori(
             id: e['id_kategori'],
             nama: e['nama_kategori'] ?? '',
             gambarUrl: e['gambar_url'],
-          ),
-        )
-        .toList();
-
-    setState(() => loading = false);
+          );
+        }).toList();
+        loading = false;
+      });
+    } catch (e) {
+      setState(() => loading = false);
+      debugPrint('Error fetch kategori: $e');
+    }
   }
 
+  // ================= DELETE DATA =================
   Future<void> deleteKategori(int id) async {
-    await supabase.from('kategori').delete().eq('id_kategori', id);
-    kategoriList.removeWhere((e) => e.id == id);
-    setState(() {});
+    try {
+      await supabase.from('kategori').delete().eq('id_kategori', id);
+      fetchKategori();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kategori berhasil dihapus')),
+      );
+    } catch (e) {
+      debugPrint('Error delete: $e');
+    }
   }
 
   @override
@@ -60,182 +87,248 @@ class _KategoriPageState extends State<KategoriPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFBFD6DB),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF8FAFB6),
-        title: const Text('Daftar Kategori'),
-        leading: const BackButton(color: Colors.black),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            // 🔍 Search + Tambah
-            Row(
+
+      // ================= BODY =================
+      body: Column(
+        children: [
+          // ================= HEADER =================
+          Container(
+            padding: const EdgeInsets.only(top: 40, bottom: 20, left: 15, right: 15),
+            decoration: const BoxDecoration(
+              color: Color(0xFF8FAFB6),
+            ),
+            child: Row(
               children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.search),
-                      hintText: 'Cari kategori alat...',
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding:
-                          const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    onChanged: (v) => setState(() => searchQuery = v),
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Daftar Kategori',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8FAFB6),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                  ),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Tambah kategori'),
-                  onPressed: () async {
-                    final result = await Navigator.push<Kategori>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const KategoriTambahPage(),
-                      ),
-                    );
-                    if (result != null) {
-                      kategoriList.add(result);
-                      setState(() {});
-                    }
-                  },
-                )
+                const SizedBox(width: 48),
               ],
             ),
+          ),
 
-            const SizedBox(height: 12),
+          // ================= SEARCH & ADD =================
+          Container(
+            padding: const EdgeInsets.all(15),
+            color: const Color(0xFFF0F0F0),
+            child: Column(
+              children: [
+                TextField(
+                  onChanged: (value) => setState(() => searchQuery = value),
+                  decoration: InputDecoration(
+                    hintText: 'Cari kategori alat...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 40,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Tambah Kategori'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8FAFB6),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const KategoriTambahPage(),
+                        ),
+                      );
+                      if (result != null) fetchKategori();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-            // 📋 List kategori
-            Expanded(
-              child: loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : filteredList.isEmpty
-                      ? const Center(child: Text('Kategori tidak ditemukan'))
-                      : ListView.builder(
-                          itemCount: filteredList.length,
-                          itemBuilder: (context, index) {
-                            final kategori = filteredList[index];
+          // ================= LIST ITEMS =================
+          Expanded(
+            child: loading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredList.isEmpty
+                    ? const Center(child: Text('Kategori tidak ditemukan'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+                        itemCount: filteredList.length,
+                        itemBuilder: (context, index) {
+                          final kategori = filteredList[index];
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFC7D9DE),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  // 🖼 Gambar
-                                  Container(
-                                    width: 70,
-                                    height: 70,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
-                                      color: Colors.white,
-                                      image: kategori.gambarUrl != null
-                                          ? DecorationImage(
-                                              image:
-                                                  NetworkImage(kategori.gambarUrl!),
-                                              fit: BoxFit.cover,
-                                            )
-                                          : null,
-                                    ),
-                                    child: kategori.gambarUrl == null
-                                        ? const Icon(Icons.category,
-                                            size: 40, color: Colors.grey)
+                          // ===== Konversi ke kat.Kategori =====
+                          final katKategori = kat.Kategori(
+                            id: kategori.id,
+                            nama: kategori.nama,
+                            gambarPath: kategori.gambarUrl,
+                          );
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFB4C8CC),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.black),
+                            ),
+                            child: Row(
+                              children: [
+                                // Image
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    image: kategori.gambarUrl != null
+                                        ? DecorationImage(
+                                            image: NetworkImage(kategori.gambarUrl!),
+                                            fit: BoxFit.cover,
+                                          )
                                         : null,
                                   ),
-                                  const SizedBox(width: 12),
-
-                                  // 📄 Nama
-                                  Expanded(
-                                    child: Text(
-                                      kategori.nama,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                  child: kategori.gambarUrl == null
+                                      ? const Icon(Icons.image, size: 50, color: Colors.grey)
+                                      : null,
+                                ),
+                                const SizedBox(width: 15),
+                                // Nama kategori
+                                Expanded(
+                                  child: Text(
+                                    kategori.nama,
+                                    style: const TextStyle(
+                                        fontSize: 18, fontWeight: FontWeight.bold),
                                   ),
+                                ),
+                                // Buttons Edit & Hapus
+                                Column(
+                                  children: [
+                                    _buildSmallButton('Edit', const Color(0xFF4A68FF), () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              KategoriEditPage(kategori: katKategori),
+                                        ),
+                                      ).then((_) => fetchKategori());
+                                    }),
+                                    const SizedBox(height: 8),
+                                    _buildSmallButton(
+                                      'Hapus',
+                                      const Color(0xFFFF4A4A),
+                                      () => _showDeleteDialog(kategori),
+                                      isDelete: true,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
 
-                                  // ✏️ Edit
-                                  Column(
-                                    children: [
-                                      SizedBox(
-                                        width: 60,
-                                        height: 30,
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.white,
-                                            foregroundColor: Colors.black,
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                          onPressed: () async {
-                                            final edited =
-                                                await Navigator.push<Kategori>(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    KategoriEditPage(
-                                                        kategori: kategori),
-                                              ),
-                                            );
-                                            if (edited != null) {
-                                              final i = kategoriList.indexWhere(
-                                                  (e) => e.id == edited.id);
-                                              kategoriList[i] = edited;
-                                              setState(() {});
-                                            }
-                                          },
-                                          child: const Text('Edit',
-                                              style: TextStyle(fontSize: 12)),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      SizedBox(
-                                        width: 60,
-                                        height: 30,
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red[300],
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                          onPressed: () async {
-                                            final ok = await showDialog<bool>(
-                                              context: context,
-                                              barrierDismissible: false,
-                                              builder: (_) =>
-                                                  HapusKategoriDialog(
-                                                      namaKategori:
-                                                          kategori.nama),
-                                            );
-                                            if (ok == true) {
-                                              await deleteKategori(kategori.id);
-                                            }
-                                          },
-                                          child: const Text('Hapus',
-                                              style: TextStyle(fontSize: 12)),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+      // ================= BOTTOM NAVIGATION BAR =================
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF8FAFB6),
+        currentIndex: 3,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.black,
+        selectedFontSize: 10,
+        unselectedFontSize: 10,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => KatDashboard_AdminPage()));
+          } else if (index == 1) {
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (_) => const PenggunaPage()));
+          } else if (index == 2) {
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (_) => const AlatPage()));
+          } else if (index == 5) {
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const LogoutPage()));
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Produk'),
+          BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
+          BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+        ],
+      ),
+    );
+  }
+
+  // ================= HELPER: SHOW DELETE DIALOG =================
+  void _showDeleteDialog(Kategori kategori) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hapus Kategori'),
+          content: Text('Apakah Anda yakin ingin menghapus kategori "${kategori.nama}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                deleteKategori(kategori.id);
+              },
+              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ================= WIDGET BUTTON KECIL =================
+  Widget _buildSmallButton(String label, Color color, VoidCallback onTap,
+      {bool isDelete = false}) {
+    return SizedBox(
+      width: 80,
+      height: 28,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          side: BorderSide(color: color.withOpacity(0.5)),
+          padding: EdgeInsets.zero,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isDelete) Icon(Icons.delete_outline, color: color, size: 14),
+            Text(label, style: TextStyle(color: color, fontSize: 12)),
           ],
         ),
       ),
@@ -243,18 +336,6 @@ class _KategoriPageState extends State<KategoriPage> {
   }
 }
 
-// ================= MODEL =================
-
-class Kategori {
-  final int id;
-  String nama;
-  String? gambarUrl;
-
-  Kategori({
-    required this.id,
-    required this.nama,
-    this.gambarUrl, String? gambarPath,
-  });
-
-  String? get gambarPath => null;
+// ignore: non_constant_identifier_names
+KatDashboard_AdminPage() {
 }

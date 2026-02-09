@@ -1,102 +1,130 @@
 import 'package:flutter/material.dart';
 import 'package:peminjam_alat/alat/alat.dart';
+import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
+import 'package:peminjam_alat/riwayat/riwayat.dart'; // Import halaman riwayat
 
-// Bagian import ini di-uncomment jika filenya sudah kamu buat
-// import 'package:peminjam_alat/peminjaman/peminjaman.dart';
-// import 'package:peminjam_alat/pengembalian/pengembalian.dart';
+// Import halaman kategori dengan alias 'kat' agar tidak bentrok
+import 'package:peminjam_alat/kategori/kategori.dart' as kat;
 
+// Halaman Dashboard Admin
 class DashboardAdminPage extends StatelessWidget {
   const DashboardAdminPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFBFD6DB),
+      backgroundColor: const Color(0xFFBFD6DB), // Background halaman
       body: Column(
         children: [
-          // ================= HEADER SECTION =================
+          // ===== HEADER =====
           Container(
-            height: 180,
             width: double.infinity,
             decoration: const BoxDecoration(
-              color: Color(0xFF8FAFB6),
+              color: Color(0xFF8FAFB6), // Warna header
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(50),
                 bottomRight: Radius.circular(50),
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(25, 60, 25, 20),
-              child: Column(
-                children: [
-                  const Text(
-                    'Hi, Selamat Datang',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(25, 20, 25, 15),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ===== Baris Selamat Datang & Logout =====
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Hi, Selamat Datang',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.logout, color: Colors.black),
+                          onPressed: () {
+                            // Navigasi ke halaman logout
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LogoutPage(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 15),
-                  Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black26, width: 1),
+                    const SizedBox(height: 15),
+                    // ===== Baris Profil Admin =====
+                    Row(
+                      children: [
+                        // Avatar Admin
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black26, width: 1),
+                          ),
+                          child: const CircleAvatar(
+                            radius: 25,
+                            backgroundColor: Color(0xFFD9D9D9),
+                            child:
+                                Icon(Icons.person, color: Colors.black, size: 30),
+                          ),
                         ),
-                        child: const CircleAvatar(
-                          radius: 25,
-                          backgroundColor: Color(0xFFD9D9D9),
-                          child: Icon(Icons.person, color: Colors.black, size: 30),
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Admin',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                        const SizedBox(width: 15),
+                        // Nama & Jabatan Admin
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Admin',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Rara Aramita Azura',
-                            style: TextStyle(color: Colors.black, fontSize: 14),
-                          ),
-                        ],
-                      )
-                    ],
-                  )
-                ],
+                            Text(
+                              'Rara Aramita Azura',
+                              style: TextStyle(color: Colors.black, fontSize: 14),
+                            ),
+                          ],
+                        )
+                      ],
+                    )
+                  ],
+                ),
               ),
             ),
           ),
           const SizedBox(height: 10),
 
-          // ================= SCROLLABLE CONTENT =================
+          // ===== BODY =====
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // Row 1: Data Peminjam & Data Petugas
+                  // ===== Row Kartu Statistik =====
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Kartu Statistik Data Peminjam
                       _buildStatCard(
                         context,
                         title: 'Data Peminjam',
-                        value: '25',
+                        value: '25', // Nilai sementara
                         subtitle: 'Total Peminjam',
                         icon: Icons.groups_rounded,
-                        target: const PenggunaPage(),
+                        target: const PenggunaPage(), // Navigasi halaman
                       ),
                       const SizedBox(width: 15),
+                      // Kartu Data Petugas
                       _buildIconCard(
                         context,
                         title: 'Data Petugas',
@@ -107,38 +135,27 @@ class DashboardAdminPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
 
-                  // Row 2: Sedang Dipinjam & Kotak Dekoratif
+                  // ===== Row Statistik Sedang Dipinjam =====
                   Row(
                     children: [
                       _buildSmallStatCard(
                         context,
                         title: 'Sedang Dipinjam',
-                        value: '6',
+                        value: '6', // Nilai sementara
                         icon: Icons.check_circle_outline,
                         target: const AlatPage(),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Container(
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF9F3F3),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.black12),
-                          ),
-                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 15),
 
-                  // Row 3: Tersedia
+                  // ===== Row Statistik Tersedia =====
                   Row(
                     children: [
                       _buildSmallStatCard(
                         context,
                         title: 'Tersedia',
-                        value: '10',
+                        value: '10', // Nilai sementara
                         icon: Icons.inventory_2_outlined,
                         target: const AlatPage(),
                       ),
@@ -148,7 +165,7 @@ class DashboardAdminPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // ================= GRAFIK PEMINJAMAN =================
+                  // ===== Bagian Grafik =====
                   Container(
                     padding: const EdgeInsets.all(15),
                     decoration: BoxDecoration(
@@ -167,12 +184,10 @@ class DashboardAdminPage extends StatelessWidget {
                         const Text(
                           'Grafik Peminjaman Bulan Ini',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                              fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         const SizedBox(height: 20),
-                        _buildChartArea(),
+                        _buildChartArea(), // Widget chart sederhana
                       ],
                     ),
                   ),
@@ -183,7 +198,8 @@ class DashboardAdminPage extends StatelessWidget {
           ),
         ],
       ),
-      // ================= BOTTOM NAVIGATION BAR =================
+
+      // ===== BOTTOM NAVIGATION BAR =====
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           borderRadius: BorderRadius.only(
@@ -195,22 +211,37 @@ class DashboardAdminPage extends StatelessWidget {
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           backgroundColor: const Color(0xFF8FAFB6),
-          currentIndex: 0,
+          currentIndex: 0, // Index aktif di dashboard
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.black,
           selectedFontSize: 10,
           unselectedFontSize: 10,
           onTap: (index) {
+            // Navigasi antar halaman
             if (index == 1) {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const PenggunaPage()));
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (_) => const PenggunaPage()));
             } else if (index == 2) {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const AlatPage()));
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (_) => const AlatPage()));
+            } else if (index == 3) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const kat.KategoriPage(),
+                ),
+              );
             } else if (index == 4) {
-              // TODO: Navigasi ke PeminjamanPage jika sudah dibuat
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => const PeminjamanPage()));
+              // Navigasi ke RiwayatPage
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RiwayatPage(),
+                ),
+              );
             } else if (index == 5) {
-              // TODO: Navigasi ke PengembalianPage jika sudah dibuat
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => const PengembalianPage()));
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (_) => const LogoutPage()));
             }
           },
           items: const [
@@ -218,16 +249,15 @@ class DashboardAdminPage extends StatelessWidget {
             BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
             BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Produk'),
             BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Peminjaman'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_return_outlined), label: 'Pengembalian'),
+            BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment_return_outlined), label: 'Akun'),
           ],
         ),
       ),
     );
   }
 
-  // ================= HELPER WIDGETS =================
-
+  // ===== Fungsi Membuat Kartu Statistik =====
   Widget _buildStatCard(BuildContext context,
       {required String title,
       required String value,
@@ -236,7 +266,8 @@ class DashboardAdminPage extends StatelessWidget {
       required Widget target}) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => target)),
+        onTap: () =>
+            Navigator.push(context, MaterialPageRoute(builder: (_) => target)),
         child: Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
@@ -246,12 +277,17 @@ class DashboardAdminPage extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(icon, size: 40, color: Colors.black),
+              Icon(icon, size: 40, color: Colors.black), // Icon utama
               const SizedBox(height: 5),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 10),
-              Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-              Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.black54)),
+              Text(value,
+                  style: const TextStyle(
+                      fontSize: 32, fontWeight: FontWeight.bold)),
+              Text(subtitle,
+                  style: const TextStyle(fontSize: 11, color: Colors.black54)),
             ],
           ),
         ),
@@ -259,11 +295,13 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
+  // ===== Fungsi Membuat Kartu Ikon =====
   Widget _buildIconCard(BuildContext context,
       {required String title, required IconData icon, required Widget target}) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => target)),
+        onTap: () =>
+            Navigator.push(context, MaterialPageRoute(builder: (_) => target)),
         child: Container(
           height: 160,
           padding: const EdgeInsets.all(15),
@@ -276,7 +314,9 @@ class DashboardAdminPage extends StatelessWidget {
             children: [
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                child: Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 13)),
               ),
               const Spacer(),
               Icon(icon, size: 70, color: Colors.black54),
@@ -288,6 +328,7 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
+  // ===== Fungsi Kartu Statistik Kecil =====
   Widget _buildSmallStatCard(BuildContext context,
       {required String title,
       required String value,
@@ -295,7 +336,8 @@ class DashboardAdminPage extends StatelessWidget {
       required Widget target}) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => target)),
+        onTap: () =>
+            Navigator.push(context, MaterialPageRoute(builder: (_) => target)),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -308,14 +350,22 @@ class DashboardAdminPage extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 12)),
                   const SizedBox(height: 5),
                   Center(
-                    child: Text(value, style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold)),
+                    child: Text(value,
+                        style: const TextStyle(
+                            fontSize: 35, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
-              Positioned(right: 0, top: 0, child: Icon(icon, size: 18, color: Colors.black54)),
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Icon(icon, size: 18, color: Colors.black54),
+              ),
             ],
           ),
         ),
@@ -323,11 +373,13 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
+  // ===== Fungsi Area Grafik =====
   Widget _buildChartArea() {
     return SizedBox(
       height: 200,
       child: Row(
         children: [
+          // Axis Y
           const Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -343,9 +395,11 @@ class DashboardAdminPage extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 10),
+          // Grafik batang
           Expanded(
             child: Stack(
               children: [
+                // Garis horizontal untuk grid
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(
@@ -375,6 +429,7 @@ class DashboardAdminPage extends StatelessWidget {
     );
   }
 
+  // ===== Fungsi Membuat Batang Grafik =====
   Widget _buildBar(double height) {
     return Container(
       width: 30,

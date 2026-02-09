@@ -1,11 +1,12 @@
-// ignore_for_file: unused_import
+// ignore_for_file: unused_import, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:peminjam_alat/petugas/dashboard_petugas.dart';
-import 'package:peminjam_alat/peminjam/dashboard_peminjam.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../alat/alat.dart';
+// Import Dashboard sesuai role
+import 'package:peminjam_alat/admin/dashboard_admin.dart';
+import 'package:peminjam_alat/petugas/dashboard_petugas.dart';
+import 'package:peminjam_alat/peminjam/dashboard_peminjam.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,7 +18,6 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
   bool _obscure = true;
   bool _loading = false;
 
@@ -44,66 +44,52 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _loading = true);
 
     try {
-      // ================= LOGIN =================
       final AuthResponse res = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
       final user = res.user;
-      if (user == null) {
-        throw const AuthException('Login gagal');
-      }
+      if (user == null) throw const AuthException('Login gagal, user tidak ditemukan');
 
-      // ================= AMBIL ROLE =================
       final profile = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .maybeSingle();
 
-      if (profile == null) {
-        throw 'Role tidak ditemukan';
-      }
-
-      final role = profile['role'];
-
+      if (profile == null) throw 'Data profil atau Role tidak ditemukan di database';
       if (!mounted) return;
 
-      // ================= NAVIGASI SESUAI ROLE =================
-      if (role == 'admin') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => cons(),
-          ),
-        );
-      } else if (role == 'petugas') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const DashboardPetugasPage(),
-          ),
-        );
-      } else if (role == 'peminjam') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const DashboardPeminjamPage(),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Role tidak dikenali')),
-        );
+      final String role = profile['role'];
+      Widget targetPage;
+
+      switch (role) {
+        case 'admin':
+          targetPage = const DashboardAdminPage(); // pastikan DashboardAdminPage di-import
+          break;
+        case 'petugas':
+          targetPage = const DashboardPetugasPage();
+          break;
+        case 'peminjam':
+          targetPage = const DashboardPeminjamPage();
+          break;
+        default:
+          throw 'Role "$role" tidak dikenali oleh sistem';
       }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => targetPage),
+        (route) => false,
+      );
     } on AuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(content: Text('Gagal login: ${e.toString()}')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -112,140 +98,195 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFB6CED3),
-      body: SingleChildScrollView(
-        child: Column(
+    double screenHeight = MediaQuery.of(context).size.height;
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              color: const Color(0xFF8FAFB6),
-              child: const Center(
-                child: Text(
-                  'Selamat Datang',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: screenHeight * 0.28,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF8FAFB6),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(250),
+                    topRight: Radius.circular(250),
                   ),
                 ),
               ),
             ),
-
-            const SizedBox(height: 30),
-
-            Column(
-              children: [
-                Image.asset('assets/logo.png', height: 90),
-                const SizedBox(height: 10),
-                const Text(
-                  'Pinjam.yuk',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0C3B5A),
-                  ),
-                ),
-                const Text(
-                  '(Sistem Peminjaman Alat Lab Brantas)',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 30),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFBFD6DB),
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black26, blurRadius: 5),
-                ],
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.email),
-                      hintText: 'Masukkan Email',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: 100,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF8FAFB6),
                       ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: _obscure,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscure
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () {
-                          setState(() => _obscure = !_obscure);
-                        },
-                      ),
-                      hintText: 'Masukkan Password',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 45,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8FAFB6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                      child: const Text(
+                        'Selamat Datang',
+                        style: TextStyle(
+                          fontFamily: 'Serif',
+                          fontSize: 28,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
-                      child: _loading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                          : const Text(
-                              'Masuk',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                    ),
+                    const SizedBox(height: 60),
+                    SizedBox(
+                      height: 230,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.image, size: 140, color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Pinjam.yuk',
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0C3B5A),
+                      ),
+                    ),
+                    const Text(
+                      '(Sistem Peminjaman Alat Lab Brantas)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF0C3B5A),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 35),
+                      padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 30),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFB6CED3),
+                        borderRadius: BorderRadius.circular(35),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _buildTextField(
+                            controller: _emailController,
+                            hint: 'Masukkan Email',
+                            icon: Icons.person_outline,
+                          ),
+                          const SizedBox(height: 25),
+                          _buildTextField(
+                            controller: _passwordController,
+                            hint: 'Masukkan Password',
+                            icon: Icons.lock_outline,
+                            isPassword: true,
+                            obscure: _obscure,
+                            onToggle: () => setState(() => _obscure = !_obscure),
+                          ),
+                          const SizedBox(height: 50),
+                          SizedBox(
+                            width: 170,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: _loading ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8FAFB6),
+                                elevation: 3,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                  side: const BorderSide(color: Colors.black54, width: 1.2),
+                                ),
                               ),
+                              child: _loading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Masuk',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
             ),
-
-            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
-  
-  cons() {}
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+    bool obscure = false,
+    VoidCallback? onToggle,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword ? obscure : false,
+      style: const TextStyle(fontSize: 16),
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: Colors.black87, size: 24),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscure ? Icons.visibility_off : Icons.visibility,
+                  size: 22,
+                  color: Colors.black54,
+                ),
+                onPressed: onToggle,
+              )
+            : null,
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white, fontSize: 14),
+        filled: true,
+        fillColor: const Color(0xFF8FAFB6),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: const BorderSide(color: Colors.black87, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: const BorderSide(color: Colors.black, width: 1.8),
+        ),
+      ),
+    );
+  }
 }
