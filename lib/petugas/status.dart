@@ -168,7 +168,7 @@ class StatusPage extends StatelessWidget {
                     // NAVIGASI KE SETUJU
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const SetujuStatusPage()),
+                      MaterialPageRoute(builder: (context) => const SetujuStatusPage(data: {},)),
                     );
                   },
                   style: TextButton.styleFrom(

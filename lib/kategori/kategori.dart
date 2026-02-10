@@ -10,8 +10,9 @@ import 'package:peminjam_alat/pengguna/pengguna.dart';
 import 'package:peminjam_alat/alat/alat.dart';
 import 'package:peminjam_alat/kategori/tambah_kategori.dart';
 import 'package:peminjam_alat/kategori/edit_kategori.dart';
+import 'package:peminjam_alat/riwayat/riwayat.dart'; // Pastikan path ini benar sesuai project Anda
 
-// Aliasing untuk menghindari konflik nama class jika di file kategori.dart ada class dengan nama sama
+// Aliasing untuk menghindari konflik nama class
 import 'package:peminjam_alat/kategori/kategori.dart' as kat;
 
 // ================= MODEL LOKAL =================
@@ -114,7 +115,7 @@ class _KategoriPageState extends State<KategoriPage> {
                         fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                 ),
-                const SizedBox(width: 48), // Penyeimbang IconButton back
+                const SizedBox(width: 48), 
               ],
             ),
           ),
@@ -176,7 +177,6 @@ class _KategoriPageState extends State<KategoriPage> {
                         itemBuilder: (context, index) {
                           final kategori = filteredList[index];
 
-                          // Konversi ke model yang dibutuhkan KategoriEditPage
                           final katKategori = kat.Kategori(
                             id: kategori.id,
                             nama: kategori.nama,
@@ -193,7 +193,6 @@ class _KategoriPageState extends State<KategoriPage> {
                             ),
                             child: Row(
                               children: [
-                                // Image
                                 Container(
                                   width: 80,
                                   height: 80,
@@ -212,7 +211,6 @@ class _KategoriPageState extends State<KategoriPage> {
                                       : null,
                                 ),
                                 const SizedBox(width: 15),
-                                // Nama kategori
                                 Expanded(
                                   child: Text(
                                     kategori.nama,
@@ -220,7 +218,6 @@ class _KategoriPageState extends State<KategoriPage> {
                                         fontSize: 18, fontWeight: FontWeight.bold),
                                   ),
                                 ),
-                                // Buttons Edit & Hapus
                                 Column(
                                   children: [
                                     _buildSmallButton('Edit', const Color(0xFF4A68FF), () {
@@ -249,7 +246,7 @@ class _KategoriPageState extends State<KategoriPage> {
         ],
       ),
 
-      // ================= BOTTOM NAVIGATION BAR (FIXED) =================
+      // ================= BOTTOM NAVIGATION BAR =================
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF8FAFB6),
@@ -259,11 +256,10 @@ class _KategoriPageState extends State<KategoriPage> {
         selectedFontSize: 10,
         unselectedFontSize: 10,
         onTap: (index) {
-          if (index == 3) return; // Tetap di sini jika menekan kategori
+          if (index == 3) return; 
 
           switch (index) {
             case 0:
-              // Kembali ke Dashboard dan hapus stack navigasi agar navbar tidak tumpuk
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const DashboardAdminPage()),
@@ -279,7 +275,9 @@ class _KategoriPageState extends State<KategoriPage> {
                   context, MaterialPageRoute(builder: (_) => const AlatPage()));
               break;
             case 4:
-              // Tambahkan navigasi Riwayat di sini jika sudah ada filenya
+              // DIPERBAIKI: Sekarang navigasi ke Riwayat berfungsi
+              Navigator.pushReplacement(
+                  context, MaterialPageRoute(builder: (_) => const RiwayatPage()));
               break;
             case 5:
               Navigator.push(
@@ -299,7 +297,6 @@ class _KategoriPageState extends State<KategoriPage> {
     );
   }
 
-  // ================= HELPER: SHOW DELETE DIALOG =================
   void _showDeleteDialog(Kategori kategori) {
     showDialog(
       context: context,
@@ -325,7 +322,6 @@ class _KategoriPageState extends State<KategoriPage> {
     );
   }
 
-  // ================= WIDGET BUTTON KECIL =================
   Widget _buildSmallButton(String label, Color color, VoidCallback onTap,
       {bool isDelete = false}) {
     return SizedBox(

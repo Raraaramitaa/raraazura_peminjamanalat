@@ -10,6 +10,7 @@ import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
 import 'package:peminjam_alat/kategori/kategori.dart' as kat;
+import 'package:peminjam_alat/riwayat/riwayat.dart'; // Pastikan path import ini sesuai folder Anda
 
 // =========================================================
 // DIALOG HAPUS
@@ -45,20 +46,6 @@ class HapusAlatDialog extends StatelessWidget {
 }
 
 // =========================================================
-// HALAMAN RIWAYAT / PEMINJAMAN (SATU SAJA)
-// =========================================================
-class PeminjamanPage extends StatelessWidget {
-  const PeminjamanPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text("Halaman Riwayat Peminjaman")),
-    );
-  }
-}
-
-// =========================================================
 // HALAMAN ALAT
 // =========================================================
 class AlatPage extends StatefulWidget {
@@ -75,7 +62,7 @@ class _AlatPageState extends State<AlatPage> {
   List<Map<String, dynamic>> filteredAlatList = [];
 
   bool isLoading = true;
-  final int _currentIndex = 2;
+  final int _currentIndex = 2; // Index untuk Alat
 
   final TextEditingController _searchController = TextEditingController();
   String _selectedKategori = "Semua";
@@ -141,7 +128,7 @@ class _AlatPageState extends State<AlatPage> {
   }
 
   // =========================================================
-  // NAVBAR
+  // LOGIKA NAVIGASI (DIPERBAIKI)
   // =========================================================
   void _onNavTapped(int index) {
     if (index == _currentIndex) return;
@@ -155,13 +142,13 @@ class _AlatPageState extends State<AlatPage> {
         page = const PenggunaPage();
         break;
       case 2:
-        page = const AlatPage();
-        break;
+        return; // Sudah di halaman Alat
       case 3:
         page = const kat.KategoriPage();
         break;
       case 4:
-        page = const PeminjamanPage();
+        // Navigasi ke RiwayatPage yang asli (BUKAN PeminjamanPage kosong)
+        page = const RiwayatPage(); 
         break;
       case 5:
         page = const LogoutPage();
@@ -298,7 +285,7 @@ class _AlatPageState extends State<AlatPage> {
         child: const Icon(Icons.add),
       ),
 
-      // NAVBAR ADMIN (SAMA DENGAN DASHBOARD)
+      // NAVBAR ADMIN
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
@@ -306,6 +293,8 @@ class _AlatPageState extends State<AlatPage> {
         backgroundColor: const Color(0xFF8FAFB6),
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.black,
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
         items: const [
           BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined), label: 'Beranda'),
@@ -382,9 +371,12 @@ class _AlatPageState extends State<AlatPage> {
           Column(
             children: [
               Expanded(
-                child: item['foto_url'] != null
-                    ? Image.network(item['foto_url'], fit: BoxFit.cover)
-                    : const Icon(Icons.image, size: 40),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                  child: item['foto_url'] != null
+                      ? Image.network(item['foto_url'], fit: BoxFit.cover)
+                      : const Icon(Icons.image, size: 40),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(6),
@@ -412,7 +404,8 @@ class _AlatPageState extends State<AlatPage> {
               },
               child: const CircleAvatar(
                 radius: 12,
-                child: Icon(Icons.edit, size: 14),
+                backgroundColor: Colors.blue,
+                child: Icon(Icons.edit, size: 14, color: Colors.white),
               ),
             ),
           ),

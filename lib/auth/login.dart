@@ -102,11 +102,11 @@ class _LoginPageState extends State<LoginPage> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5), // Background abu sangat muda
+        backgroundColor: const Color(0xFFF5F5F5),
         body: SingleChildScrollView(
           child: Column(
             children: [
-              // Header Biru Abu-abu
+              // ================= HEADER =================
               Container(
                 width: double.infinity,
                 height: 120,
@@ -127,31 +127,36 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               
-              const SizedBox(height: 40), // Jarak disesuaikan setelah teks dihapus
+              const SizedBox(height: 30),
               
-              // Logo Section - Ukuran Diperbesar
+              // ================= LOGO SECTION (DIPERBESAR MAKSIMAL) =================
               Container(
-                height: 180, // Ukuran sebelumnya 130
-                width: 180,  // Ukuran sebelumnya 130
+                height: 280, // UKURAN RAKSASA
+                width: 280,  // UKURAN RAKSASA
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(25),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/logo.png'),
-                    fit: BoxFit.cover,
-                  ),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    )
+                  ],
                 ),
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.developer_board, size: 100, color: Color(0xFF0C3B5A)),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain, // Memastikan seluruh logo terlihat tanpa terpotong
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.developer_board, size: 150, color: Color(0xFF0C3B5A)),
+                  ),
                 ),
               ),
               
-              // Teks Pinjam.yuk dan deskripsi telah dihapus di sini
-              
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
 
-              // Form Utama (Background Kotak Biru Muda)
+              // ================= FORM UTAMA =================
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 40),
                 padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 25),
@@ -171,7 +176,7 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     _buildTextField(
                       controller: _emailController,
-                      hint: 'Masukkan Nama',
+                      hint: 'Masukkan Email',
                       icon: Icons.email_outlined,
                     ),
                     const SizedBox(height: 25),

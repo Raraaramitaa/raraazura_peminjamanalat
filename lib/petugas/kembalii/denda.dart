@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'validasi_pembayaran.dart';
 
 class DendaPage extends StatelessWidget {
   const DendaPage({super.key});
@@ -12,27 +13,37 @@ class DendaPage extends StatelessWidget {
           // Header
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 20),
+            padding: const EdgeInsets.only(
+                top: 60, left: 20, right: 20, bottom: 20),
             decoration: const BoxDecoration(
-              color: Color(0xFF8FAFB6),
-              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+              color: Color(0xFF53666D),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
             ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Hallo Petugas', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                Icon(Icons.account_circle, size: 45, color: Colors.white),
+                Text(
+                  'Hallo Petugas',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold),
+                ),
+                Icon(Icons.account_circle, size: 45, color: Colors.white70),
               ],
             ),
           ),
 
           const SizedBox(height: 20),
 
-          // Tab Menu (Denda Aktif)
+          // Tab Menu
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildTabItem('Pengembalian', false),
                 _buildTabItem('Selesai', false),
@@ -50,57 +61,89 @@ class DendaPage extends StatelessWidget {
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                 color: const Color(0xFFB4C8CC),
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
                   const Row(
                     children: [
-                      CircleAvatar(backgroundColor: Colors.black, child: Icon(Icons.person, color: Colors.white)),
+                      CircleAvatar(
+                        backgroundColor: Colors.black,
+                        child: Icon(Icons.person, color: Colors.white),
+                      ),
                       SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Aisyah Najwa', style: TextStyle(fontWeight: FontWeight.bold)),
-                          Text('aisyah@gmail.com', style: TextStyle(fontSize: 12, decoration: TextDecoration.underline)),
+                          Text('Aisyah Najwa',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            'aisyah@gmail.com',
+                            style: TextStyle(
+                                fontSize: 12,
+                                decoration: TextDecoration.underline),
+                          ),
                         ],
                       ),
                       Spacer(),
                       Icon(Icons.more_vert),
                     ],
                   ),
-                  const Divider(color: Colors.white),
+                  const Divider(color: Colors.white, thickness: 1),
                   Row(
                     children: [
-                      Container(width: 50, height: 50, color: Colors.white),
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.laptop, color: Colors.grey),
+                      ),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('ASUS Zenbook S 16 (UM5606)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            Text('Tanggal Pinjam : 12/01/2026', style: TextStyle(fontSize: 11)),
-                            Text('Tanggal Kembali : 15/01/2026', style: TextStyle(fontSize: 11)),
-                            Text('Tanggal Tenggat : 14/01/2026', style: TextStyle(fontSize: 11)),
+                            Text(
+                              'ASUS Zenbook S 16 (UM5606)',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            Text('Tanggal Pinjam : 12/01/2026',
+                                style: TextStyle(fontSize: 11)),
+                            Text('Tanggal Kembali : 15/01/2026',
+                                style: TextStyle(fontSize: 11)),
                           ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 15),
-                  // Validasi Pembayaran Button
+
+                  // TOMBOL VALIDASI
                   Align(
                     alignment: Alignment.bottomRight,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8FAFB6),
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(color: Colors.white, width: 0.5),
-                      ),
-                      child: const Text(
-                        'Validasi Pembayaran',
-                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    child: InkWell(
+                      onTap: () {
+                        ValidasiDialog.show(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8FAFB6),
+                          border: Border.all(color: Colors.white, width: 0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Validasi Pembayaran',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ),
@@ -117,30 +160,49 @@ class DendaPage extends StatelessWidget {
 
   Widget _buildTabItem(String label, bool isActive) {
     return Container(
-      width: 110,
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      width: 100,
+      padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFF8FAFB6) : const Color(0xFFE5E7EB),
-        borderRadius: BorderRadius.circular(10),
+        color: isActive ? const Color(0xFF53666D) : const Color(0xFFE5E7EB),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black45),
       ),
-      child: Center(child: Text(label, style: TextStyle(color: isActive ? Colors.white : Colors.black54, fontWeight: FontWeight.bold))),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.black87,
+            fontSize: 12,
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      color: const Color(0xFF8FAFB6),
-      child: const Row(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      color: const Color(0xFF53666D),
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Icon(Icons.home, size: 28),
-          Icon(Icons.history, size: 28),
-          Icon(Icons.assignment_return, size: 28),
-          Icon(Icons.bar_chart, size: 28),
-          Icon(Icons.settings, size: 28),
+          _navIcon(Icons.home, 'Beranda'),
+          _navIcon(Icons.history, 'Status'),
+          _navIcon(Icons.assignment_return, 'Kembali'),
+          _navIcon(Icons.bar_chart, 'Laporan'),
+          _navIcon(Icons.settings, 'Pengaturan'),
         ],
       ),
+    );
+  }
+
+  Widget _navIcon(IconData icon, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white, size: 24),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+      ],
     );
   }
 }

@@ -15,7 +15,11 @@ class PenggunaPage extends StatefulWidget {
 
 class _PenggunaPageState extends State<PenggunaPage> {
   final SupabaseClient supabase = Supabase.instance.client;
+
+  // List data pengguna
   List<Map<String, dynamic>> penggunaList = [];
+
+  // Status loading
   bool isLoading = true;
 
   @override
@@ -24,15 +28,18 @@ class _PenggunaPageState extends State<PenggunaPage> {
     fetchPengguna();
   }
 
-  // Mengambil data pengguna dari tabel profiles
+  // ================= AMBIL DATA PENGGUNA =================
   Future<void> fetchPengguna() async {
     if (!mounted) return;
     setState(() => isLoading = true);
-    
+
     try {
+      // 🔥 PERBAIKAN DI SINI:
+      // Ambil SEMUA role: admin, petugas, peminjam
       final data = await supabase
           .from('profiles')
-          .select('id, email, role') 
+          .select('id, email, role')
+          .inFilter('role', ['admin', 'petugas', 'peminjam'])
           .order('role', ascending: true);
 
       if (mounted) {
@@ -45,27 +52,30 @@ class _PenggunaPageState extends State<PenggunaPage> {
       debugPrint('Error fetch data: $e');
       if (mounted) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengambil data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     }
   }
 
-  // Fungsi menghapus pengguna
+  // ================= HAPUS PENGGUNA =================
   Future<void> hapusPengguna(String id, String email) async {
     try {
       await supabase.from('profiles').delete().eq('id', id);
-      fetchPengguna(); // Refresh data
+
+      // Refresh data setelah hapus
+      fetchPengguna();
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('✅ Akun $email berhasil dihapus'), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text('✅ Akun $email berhasil dihapus'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Gagal menghapus: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -74,10 +84,15 @@ class _PenggunaPageState extends State<PenggunaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFBFD6DB),
+
+      // ================= APPBAR =================
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAFB6),
         elevation: 0,
-        title: const Text('Daftar Pengguna', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Daftar Pengguna',
+          style: TextStyle(color: Colors.white),
+        ),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -90,53 +105,91 @@ class _PenggunaPageState extends State<PenggunaPage> {
           )
         ],
       ),
+
+      // ================= BODY =================
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF8FAFB6)))
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF8FAFB6),
+              ),
+            )
           : penggunaList.isEmpty
-              ? const Center(child: Text('Tidak ada pengguna ditemukan.'))
+              ? const Center(
+                  child: Text('Tidak ada pengguna ditemukan.'),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: penggunaList.length,
                   itemBuilder: (context, index) {
                     final user = penggunaList[index];
+                    final role = user['role']?.toString() ?? '';
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                       child: ListTile(
+                        // ================= AVATAR =================
                         leading: CircleAvatar(
-                          backgroundColor: user['role'] == 'admin' 
-                              ? Colors.red[300] 
-                              : const Color(0xFF8FAFB6),
-                          child: const Icon(Icons.person, color: Colors.white),
+                          backgroundColor: role == 'admin'
+                              ? Colors.red[300]
+                              : role == 'petugas'
+                                  ? Colors.orange[300]
+                                  : const Color(0xFF8FAFB6),
+                          child:
+                              const Icon(Icons.person, color: Colors.white),
                         ),
+
+                        // ================= EMAIL =================
                         title: Text(
-                          user['email']?.toString() ?? 'Tidak ada email',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          user['email']?.toString() ??
+                              'Tidak ada email',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
                         ),
-                        subtitle: Text("Role: ${user['role']?.toString().toUpperCase()}"),
+
+                        // ================= ROLE =================
+                        subtitle: Text(
+                          "Role: ${role.toUpperCase()}",
+                        ),
+
+                        // ================= AKSI =================
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // Tombol edit
                             IconButton(
-                              icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                              icon: const Icon(Icons.edit_outlined,
+                                  color: Colors.blue),
                               onPressed: () async {
-                                // Tunggu hasil (true) dari halaman edit untuk refresh data
-                                final result = await Navigator.push(
+                                final result =
+                                    await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => EditPenggunaPage(userData: user),
+                                    builder: (_) => EditPenggunaPage(
+                                      userData: user,
+                                    ),
                                   ),
                                 );
-                                if (result == true) fetchPengguna();
+                                if (result == true) {
+                                  fetchPengguna();
+                                }
                               },
                             ),
+
+                            // Tombol hapus
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                              icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red),
                               onPressed: () {
                                 showDialog(
                                   context: context,
-                                  builder: (_) => DialogHapusPengguna(
-                                    onHapus: () => hapusPengguna(
+                                  builder: (_) =>
+                                      DialogHapusPengguna(
+                                    onHapus: () =>
+                                        hapusPengguna(
                                       user['id'].toString(),
                                       user['email'].toString(),
                                     ),
@@ -150,14 +203,22 @@ class _PenggunaPageState extends State<PenggunaPage> {
                     );
                   },
                 ),
+
+      // ================= FLOATING BUTTON =================
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF8FAFB6),
         onPressed: () async {
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const TambahPenggunaPage()),
+            MaterialPageRoute(
+              builder: (_) => const TambahPenggunaPage(),
+            ),
           );
-          if (result == true) fetchPengguna();
+
+          // Jika berhasil menambah user → refresh
+          if (result == true) {
+            fetchPengguna();
+          }
         },
         child: const Icon(Icons.add, color: Colors.white),
       ),

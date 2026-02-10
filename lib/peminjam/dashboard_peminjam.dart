@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/peminjam/pinjam/pinjam_alat.dart'; 
-// Import file pinjam_alat
-// ignore: unused_import
-import 'package:peminjam_alat/pengguna/pinjam_alat.dart'; // ✅ Sesuaikan path file pinjam_alat.dart Anda
+import 'package:peminjam_alat/peminjam/kembali/kembali.dart'; // ✅ Sesuaikan path file kembali.dart Anda
 
 class DashboardPeminjamPage extends StatefulWidget {
   const DashboardPeminjamPage({super.key});
@@ -15,12 +13,12 @@ class DashboardPeminjamPage extends StatefulWidget {
 class _DashboardPeminjamPageState extends State<DashboardPeminjamPage> {
   int _selectedIndex = 0;
 
-  // Update List Halaman
+  // Update List Halaman Lengkap
   final List<Widget> _pages = [
     const BerandaContent(),
     const AlatPage(),
-    const PinjamAlatPage(), // ✅ Sekarang memanggil halaman pinjam_alat
-    const Center(child: Text('Halaman Kembali')),
+    const PinjamAlatPage(), 
+    const KembaliPage(dataPeminjaman: {},), // ✅ Sudah terhubung ke file kembali.dart
     const LogoutPage(),
   ];
 
@@ -37,7 +35,7 @@ class _DashboardPeminjamPageState extends State<DashboardPeminjamPage> {
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF8FAFB6), // Disamakan dengan warna header agar konsisten
+        backgroundColor: const Color(0xFF8FAFB6), 
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: Colors.white,
@@ -56,7 +54,7 @@ class _DashboardPeminjamPageState extends State<DashboardPeminjamPage> {
   }
 }
 
-// ================= HALAMAN BERANDA =================
+// ================= HALAMAN BERANDA (LENGKAP) =================
 class BerandaContent extends StatelessWidget {
   const BerandaContent({super.key});
 
@@ -86,7 +84,7 @@ class BerandaContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Hallo,Selamat datang',
-                        style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Serif')),
+                        style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold)),
                     Text('Rara Aramita Azura', style: TextStyle(color: Colors.white, fontSize: 14)),
                   ],
                 ),
@@ -221,7 +219,7 @@ class BerandaContent extends StatelessWidget {
   }
 }
 
-// ================= HALAMAN ALAT =================
+// ================= HALAMAN ALAT (LENGKAP) =================
 class AlatPage extends StatelessWidget {
   const AlatPage({super.key});
 
@@ -325,7 +323,10 @@ class AlatPage extends StatelessWidget {
                     ),
                     ElevatedButton(
                       onPressed: () {},
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8FAFB6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8FAFB6), 
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                      ),
                       child: const Text('Lihat Detail', style: TextStyle(fontSize: 10, color: Colors.white)),
                     )
                   ],

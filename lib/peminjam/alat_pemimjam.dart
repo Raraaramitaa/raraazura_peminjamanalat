@@ -1,7 +1,10 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:peminjam_alat/peminjam/kembali/kembali.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// ignore: unused_import
+import 'kembali.dart'; // Import halaman kembali untuk menghubungkan data
 
 class AlatPage extends StatefulWidget {
   const AlatPage({super.key});
@@ -14,11 +17,11 @@ class _AlatPageState extends State<AlatPage> {
   // Inisialisasi Supabase Client
   final SupabaseClient supabase = Supabase.instance.client;
 
-  // State Management
   List<Map<String, dynamic>> allAlat = [];
   List<Map<String, dynamic>> filteredAlat = [];
   bool isLoading = true;
 
+  // Daftar Kategori (Pastikan teks ini sesuai dengan isi kolom 'kategori' di tabel Supabase)
   final List<String> categories = ['Semua', 'Laptop', 'Proyektor', 'Kamera', 'Mouse'];
   int selectedCategoryIndex = 0;
   final TextEditingController _searchController = TextEditingController();
@@ -29,50 +32,58 @@ class _AlatPageState extends State<AlatPage> {
     fetchDataAlat();
   }
 
-  // ================= DATA FETCHING (DARI SUPABASE) =================
+  // ================= FETCH DATA DARI SUPABASE =================
   Future<void> fetchDataAlat() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
+
     try {
-      // Mengambil data dari tabel 'alat' di Supabase
-      // Pastikan nama tabel di Supabase Anda adalah 'alat'
+      // 1. Mengambil data dari tabel 'alat'
+      // 2. Select '*' untuk mengambil semua kolom (id, nama_alat, kategori, status, foto_url, dll)
       final data = await supabase
           .from('alat')
           .select()
           .order('nama_alat', ascending: true);
 
-      setState(() {
-        allAlat = List<Map<String, dynamic>>.from(data);
-        // Jalankan filter pertama kali untuk sinkronisasi kategori 'Semua'
-        _applyFilters(); 
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          allAlat = List<Map<String, dynamic>>.from(data);
+          _applyFilters(); // Sinkronkan dengan pencarian/kategori yang aktif
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Gagal mengambil data: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      debugPrint("Error Koneksi Supabase: $e");
+      if (mounted) {
+        setState(() => isLoading = false);
+        _showErrorSnackBar("Gagal memuat data dari tabel 'alat'. Periksa koneksi atau nama tabel.");
+      }
     }
   }
 
-  // ================= LOGIKA FILTER (PENCARIAN & KATEGORI) =================
+  // ================= LOGIKA FILTER & PENCARIAN =================
   void _applyFilters() {
     final query = _searchController.text.toLowerCase();
-    final selectedCat = categories[selectedCategoryIndex];
+    final selectedCat = categories[selectedCategoryIndex].toLowerCase();
 
     setState(() {
       filteredAlat = allAlat.where((item) {
+        // Mengambil data string dengan proteksi null safety
         final name = (item['nama_alat'] ?? '').toString().toLowerCase();
-        final category = (item['kategori'] ?? '').toString();
+        final category = (item['kategori'] ?? '').toString().toLowerCase();
 
         bool matchQuery = name.contains(query);
-        bool matchCategory = selectedCat == 'Semua' || category == selectedCat;
+        bool matchCategory = selectedCat == 'semua' || category == selectedCat;
 
         return matchQuery && matchCategory;
       }).toList();
     });
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -81,7 +92,7 @@ class _AlatPageState extends State<AlatPage> {
       backgroundColor: const Color(0xFFBFD6DB),
       body: Column(
         children: [
-          // ================= HEADER AREA =================
+          // HEADER AREA
           Container(
             padding: const EdgeInsets.fromLTRB(25, 60, 25, 25),
             decoration: const BoxDecoration(
@@ -94,55 +105,40 @@ class _AlatPageState extends State<AlatPage> {
             child: Column(
               children: [
                 Row(
-                  children: const [
+                  // ignore: prefer_const_literals_to_create_immutables
+                  children: [
                     CircleAvatar(
                       radius: 22,
                       backgroundColor: Colors.white,
                       child: Icon(Icons.person, color: Color(0xFF8FAFB6), size: 30),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hallo, Selamat datang',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        Text(
-                          'Rara Aramita Azura',
-                          style: TextStyle(color: Colors.white, fontSize: 14),
-                        ),
+                      children: const [
+                        Text('Hallo, Selamat datang',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        Text('Rara Aramita Azura', style: TextStyle(color: Colors.white, fontSize: 14)),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 25),
-                // Search Bar
+                // SEARCH BAR
                 Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 15),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
                   ),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (value) => _applyFilters(),
+                    onChanged: (_) => _applyFilters(),
                     decoration: InputDecoration(
                       hintText: 'Cari alat pinjamanmu...',
-                      hintStyle: TextStyle(color: Colors.black38, fontSize: 14),
-                      prefixIcon: Icon(Icons.search, color: Colors.black54),
+                      prefixIcon: Icon(Icons.search, color: Color(0xFF8FAFB6)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 15),
                     ),
                   ),
                 ),
@@ -152,7 +148,7 @@ class _AlatPageState extends State<AlatPage> {
 
           const SizedBox(height: 20),
 
-          // ================= CATEGORY LIST =================
+          // HORIZONTAL CATEGORIES
           SizedBox(
             height: 40,
             child: ListView.builder(
@@ -161,35 +157,26 @@ class _AlatPageState extends State<AlatPage> {
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 bool isSelected = selectedCategoryIndex == index;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedCategoryIndex = index;
-                        _applyFilters();
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 22),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF8FAFB6) : Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          )
-                        ],
-                      ),
-                      child: Text(
-                        categories[index],
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.black87,
-                          fontWeight: FontWeight.bold,
-                        ),
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      selectedCategoryIndex = index;
+                      _applyFilters();
+                    });
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF53666D) : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      categories[index],
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black87, 
+                        fontWeight: FontWeight.bold
                       ),
                     ),
                   ),
@@ -198,186 +185,120 @@ class _AlatPageState extends State<AlatPage> {
             ),
           ),
 
-          const SizedBox(height: 25),
+          const SizedBox(height: 20),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 25),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Daftar Alat Tersedia',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          // ================= PRODUCT LIST (DYNAMIS) =================
+          // LIST ALAT DARI SUPABASE
           Expanded(
             child: RefreshIndicator(
               onRefresh: fetchDataAlat,
+              color: Color(0xFF8FAFB6),
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : filteredAlat.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "Alat tidak ditemukan atau data kosong",
-                            style: TextStyle(color: Colors.black54),
-                          ),
-                        )
+                      ? ListView(children: const [
+                          Center(child: Padding(
+                            padding: EdgeInsets.only(top: 100),
+                            child: Text("Alat tidak tersedia atau tidak ditemukan."),
+                          ))
+                        ])
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           itemCount: filteredAlat.length,
-                          itemBuilder: (context, index) {
-                            final item = filteredAlat[index];
-                            return _buildProductCard(item);
-                          },
+                          itemBuilder: (context, index) => _buildProductCard(filteredAlat[index]),
                         ),
             ),
           ),
-        ],
-      ),
-
-      // ================= BOTTOM NAV BAR =================
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFFBFD6DB),
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black54,
-        currentIndex: 1, // Fokus pada tab Alat
-        onTap: (index) {
-          // Tambahkan logika navigasi antar halaman di sini
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Pinjam'),
-          BottomNavigationBarItem(icon: Icon(Icons.sync_alt), label: 'Kembali'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Pengaturan'),
         ],
       ),
     );
   }
 
+  // WIDGET KARTU PRODUK (MAPPING DATA DARI TABEL SUPABASE)
   Widget _buildProductCard(Map<String, dynamic> item) {
-    // Pastikan nilai status sensitif terhadap case di database (Tersedia / tersedia)
-    bool isAvailable = (item['status']?.toString().toLowerCase() ?? '') == 'tersedia';
+    // Pastikan nama di dalam ['...'] sama persis dengan nama kolom di tabel alat Supabase Anda
+    final String name = item['nama_alat'] ?? 'Nama Tidak Ada';
+    final String category = item['kategori'] ?? 'Lainnya';
+    final String status = (item['status'] ?? 'Tersedia').toString();
+    final String? fotoUrl = item['foto_url'];
+    
+    bool isAvailable = status.toLowerCase() == 'tersedia';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          )
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gambar Produk dari URL Supabase Storage atau link eksternal
+          // Gambar Produk
           Container(
-            width: 85,
-            height: 85,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
+            width: 70, height: 70,
+            decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10)),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: item['foto_url'] != null && item['foto_url'] != ""
+              borderRadius: BorderRadius.circular(10),
+              child: (fotoUrl != null && fotoUrl.isNotEmpty)
                   ? Image.network(
-                      item['foto_url'],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                      fotoUrl, 
+                      fit: BoxFit.cover, 
+                      errorBuilder: (_, __, ___) => Icon(Icons.broken_image, color: Colors.grey)
                     )
-                  : const Icon(Icons.inventory_2, size: 40, color: Colors.black45),
+                  : Icon(Icons.inventory_2, color: Colors.grey),
             ),
           ),
           const SizedBox(width: 15),
-          // Info Produk
+          // Informasi Produk
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item['nama_alat'] ?? 'Tanpa Nama',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  item['kategori'] ?? 'Tanpa Kategori',
-                  style: const TextStyle(color: Colors.black54, fontSize: 12),
-                ),
-                const SizedBox(height: 8),
-                // Badge Status
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isAvailable 
-                        ? Colors.green.withOpacity(0.1) 
-                        : Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isAvailable ? Icons.check_circle : Icons.cancel,
-                        color: isAvailable ? Colors.green : Colors.red,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        item['status'] ?? 'Tidak Diketahui',
-                        style: TextStyle(
-                          color: isAvailable ? Colors.green : Colors.red,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(category, style: TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 5),
-                // Tombol Detail
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: SizedBox(
-                    height: 28,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Navigasi ke halaman detail dengan membawa data 'item'
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8FAFB6),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      child: const Text('Lihat Detail', style: TextStyle(fontSize: 11)),
-                    ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isAvailable ? Colors.green[50] : Colors.red[50],
+                    borderRadius: BorderRadius.circular(5)
+                  ),
+                  child: Text(
+                    status, 
+                    style: TextStyle(
+                      color: isAvailable ? Colors.green : Colors.red, 
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 10
+                    )
                   ),
                 ),
               ],
             ),
           ),
+          // Tombol Hubungkan ke KembaliPage
+          ElevatedButton(
+            onPressed: () {
+              // Menghubungkan data produk ini ke halaman KembaliPage
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => KembaliPage(
+                    dataPeminjaman: {
+                      'nama_alat': name,
+                      'tanggal_pinjam': '10 Februari 2026', // Contoh data statis
+                      'tanggal_kembali': '17 Februari 2026',
+                      'total_alat': 1,
+                    },
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF8FAFB6), 
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+            ),
+            child: Text("Detail", style: TextStyle(color: Colors.white, fontSize: 11)),
+          )
         ],
       ),
     );

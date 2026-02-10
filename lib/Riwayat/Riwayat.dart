@@ -1,11 +1,12 @@
 // ignore_for_file: file_names, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:peminjam_alat/alat/alat.dart';
 import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
 import 'package:peminjam_alat/kategori/kategori.dart' as kat;
-// Pastikan path ini benar sesuai struktur project Anda
 import 'package:peminjam_alat/admin/dashboard_admin.dart' as admin;
 
 class RiwayatPage extends StatefulWidget {
@@ -16,71 +17,45 @@ class RiwayatPage extends StatefulWidget {
 }
 
 class _RiwayatPageState extends State<RiwayatPage> {
+  final SupabaseClient supabase = Supabase.instance.client;
+
   int selectedTab = 0;
   String searchQuery = '';
 
-  // Data Dummy Riwayat
-  final List<Map<String, dynamic>> items = [
-    {
-      'title': 'Roro Armita Azura',
-      'subtitle': 'Laptop',
-      'date': '10 Jun 2026 - 14 Jun 2026',
-      'status': 'Dipinjam',
-      'color': Colors.red
-    },
-    {
-      'title': 'Clora Sunda Mulina',
-      'subtitle': 'Proyektor Putih',
-      'date': '5 Jun 2026 - 8 Jun 2026',
-      'status': 'Selesai',
-      'color': Colors.green
-    },
-    {
-      'title': 'Elingga Sarawati',
-      'subtitle': 'Mouse Tanpa Kabel',
-      'date': '1 Jun 2026 - 5 Jun 2026',
-      'status': 'Dipinjam',
-      'color': Colors.red
-    },
-    {
-      'title': 'Roroazura',
-      'subtitle': 'Nikon Camera',
-      'date': '6 Jun 2026 - 8 Jun 2026',
-      'status': 'Selesai',
-      'color': Colors.green
-    },
-  ];
+  // ================= HAPUS RIWAYAT =================
+  // ignore: unused_element
+  Future<void> _hapusRiwayat(String id) async {
+    try {
+      await supabase.from('log_aktivitas').delete().eq('id', id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Data riwayat berhasil dihapus'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal menghapus: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 1. Filter berdasarkan Tab DAN Search Query
-    List<Map<String, dynamic>> filteredItems = items.where((item) {
-      final matchesTab = (selectedTab == 0) ||
-          (selectedTab == 1 && item['status'] == 'Dipinjam') ||
-          (selectedTab == 2 && item['status'] == 'Selesai');
-
-      final matchesSearch = item['title']
-              .toLowerCase()
-              .contains(searchQuery.toLowerCase()) ||
-          item['subtitle'].toLowerCase().contains(searchQuery.toLowerCase());
-
-      return matchesTab && matchesSearch;
-    }).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xfff5f6f8),
       appBar: AppBar(
         backgroundColor: const Color(0xffc9d6dc),
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
-        ),
         title: const Text(
           'Riwayat Peminjaman',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
@@ -88,21 +63,16 @@ class _RiwayatPageState extends State<RiwayatPage> {
       ),
       body: Column(
         children: [
-          // Search bar
+          // ================= SEARCH =================
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
+              onChanged: (value) => setState(() => searchQuery = value),
               decoration: InputDecoration(
                 hintText: 'Cari nama atau alat...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF0C3B5A)),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                   borderSide: BorderSide.none,
@@ -111,7 +81,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
             ),
           ),
 
-          // Tab filter
+          // ================= TAB =================
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
@@ -125,80 +95,71 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
           const SizedBox(height: 10),
 
-          // Daftar item riwayat
+          // ================= STREAM LOG =================
           Expanded(
-            child: filteredItems.isEmpty
-                ? const Center(child: Text('Tidak ada data riwayat'))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: filteredItems.length,
-                    itemBuilder: (context, index) {
-                      return _riwayatCard(filteredItems[index]);
-                    },
-                  ),
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: supabase
+                  .from('log_aktivitas')
+                  .stream(primaryKey: ['id']), // ❗ TANPA ORDER
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Terjadi kesalahan: ${snapshot.error}'),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                      child: Text('Tidak ada data riwayat 📭'));
+                }
+
+                final allLogs = snapshot.data!;
+
+                // ================= FILTER =================
+                final filteredItems = allLogs.where((item) {
+                  final status = item['status']?.toString() ?? 'Dipinjam';
+                  final nama =
+                      (item['nama_peminjam'] ?? '').toString().toLowerCase();
+                  final alat =
+                      (item['nama_alat'] ?? '').toString().toLowerCase();
+
+                  final matchesTab =
+                      selectedTab == 0 ||
+                      (selectedTab == 1 && status == 'Dipinjam') ||
+                      (selectedTab == 2 && status == 'Selesai');
+
+                  final matchesSearch =
+                      nama.contains(searchQuery.toLowerCase()) ||
+                      alat.contains(searchQuery.toLowerCase());
+
+                  return matchesTab && matchesSearch;
+                }).toList();
+
+                if (filteredItems.isEmpty) {
+                  return const Center(
+                      child: Text('Data tidak ditemukan 🔍'));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: filteredItems.length,
+                  itemBuilder: (context, index) =>
+                      _riwayatCard(filteredItems[index]),
+                );
+              },
+            ),
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFF8FAFB6),
-          currentIndex: 4, // Index Riwayat aktif
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.black,
-          selectedFontSize: 10,
-          unselectedFontSize: 10,
-          onTap: (index) {
-            if (!mounted) return;
-            
-            Widget page;
-            switch (index) {
-              case 0:
-                page = const admin.DashboardAdminPage();
-                break;
-              case 1:
-                page = const PenggunaPage();
-                break;
-              case 2:
-                page = const AlatPage();
-                break;
-              case 3:
-                page = const kat.KategoriPage();
-                break;
-              case 4:
-                return; // Sudah di halaman riwayat
-              case 5:
-                page = const LogoutPage();
-                break;
-              default:
-                return;
-            }
-
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => page),
-            );
-          },
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
-            BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
-            BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
-            BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Keluar'),
-          ],
-        ),
-      ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
+  // ================= TAB BUTTON =================
   Widget _tabButton(String title, int index) {
     final isActive = selectedTab == index;
     return Expanded(
@@ -217,7 +178,8 @@ class _RiwayatPageState extends State<RiwayatPage> {
             style: TextStyle(
               color: isActive ? Colors.white : Colors.black,
               fontSize: 12,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              fontWeight:
+                  isActive ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ),
@@ -225,108 +187,85 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
+  // ================= CARD =================
   Widget _riwayatCard(Map<String, dynamic> item) {
+    final status = item['status'] ?? 'Dipinjam';
+    final statusColor = status == 'Selesai' ? Colors.green : Colors.red;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          )
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4)
         ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0xFFBFD6DB),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.inventory_2, color: Color(0xFF0C3B5A)),
-          ),
+          const Icon(Icons.history, color: Color(0xFF0C3B5A)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item['title'],
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                Text(item['subtitle'], style: const TextStyle(fontSize: 13)),
-                Text(
-                  item['date'],
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
+                Text(item['nama_peminjam'] ?? '-',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold)),
+                Text(item['nama_alat'] ?? '-'),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: item['color'],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  item['status'],
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 10),
-              InkWell(
-                onTap: () => _konfirmasiHapus(item),
-                child: const Text(
-                  'Hapus',
-                  style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              status,
+              style:
+                  const TextStyle(color: Colors.white, fontSize: 10),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _konfirmasiHapus(Map<String, dynamic> item) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Riwayat'),
-        content: const Text('Apakah Anda yakin ingin menghapus data ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                items.remove(item);
-              });
-              Navigator.pop(context);
-              
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Data riwayat dihapus'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+  // ================= BOTTOM NAV =================
+  Widget _buildBottomNav() {
+    return BottomNavigationBar(
+      currentIndex: 4,
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: const Color(0xFF8FAFB6),
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.black,
+      onTap: (index) {
+        if (index == 4) return;
+        Widget page;
+        switch (index) {
+          case 0: page = const admin.DashboardAdminPage(); break;
+          case 1: page = const PenggunaPage(); break;
+          case 2: page = const AlatPage(); break;
+          case 3: page = const kat.KategoriPage(); break;
+          case 5: page = const LogoutPage(); break;
+          default: return;
+        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => page),
+        );
+      },
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
+        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
+        BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
+        BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
+        BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
+        BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Keluar'),
+      ],
     );
   }
 }
