@@ -16,10 +16,7 @@ class PenggunaPage extends StatefulWidget {
 class _PenggunaPageState extends State<PenggunaPage> {
   final SupabaseClient supabase = Supabase.instance.client;
 
-  // List data pengguna
   List<Map<String, dynamic>> penggunaList = [];
-
-  // Status loading
   bool isLoading = true;
 
   @override
@@ -28,40 +25,44 @@ class _PenggunaPageState extends State<PenggunaPage> {
     fetchPengguna();
   }
 
-  // ================= AMBIL DATA PENGGUNA =================
+  // ================= AMBIL DATA PENGGUNA (DARI TABEL USERS) =================
   Future<void> fetchPengguna() async {
     if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
-      // 🔥 PERBAIKAN DI SINI:
-      // Ambil SEMUA role: admin, petugas, peminjam
       final data = await supabase
-          .from('profiles')
-          .select('id, email, role')
+          .from('users') // 🔥 GANTI KE TABEL USERS
+          .select('id_user, email, role')
           .inFilter('role', ['admin', 'petugas', 'peminjam'])
           .order('role', ascending: true);
 
       if (mounted) {
         setState(() {
-          penggunaList = List<Map<String, dynamic>>.from(data);
+          penggunaList = List<Map<String, dynamic>>.from(
+            data.map((e) => {
+                  'id': e['id_user'], // 🔥 SAMAKAN KEY BIAR SCREEN AMAN
+                  'email': e['email'],
+                  'role': e['role'],
+                }),
+          );
           isLoading = false;
         });
       }
     } catch (e) {
-      debugPrint('Error fetch data: $e');
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      debugPrint('Error fetch data users: $e');
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
   // ================= HAPUS PENGGUNA =================
   Future<void> hapusPengguna(String id, String email) async {
     try {
-      await supabase.from('profiles').delete().eq('id', id);
+      await supabase
+          .from('users')
+          .delete()
+          .eq('id_user', id); // 🔥 PK users
 
-      // Refresh data setelah hapus
       fetchPengguna();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,7 +74,7 @@ class _PenggunaPageState extends State<PenggunaPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menghapus: $e'),
+          content: Text('❌ Gagal menghapus: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -130,7 +131,6 @@ class _PenggunaPageState extends State<PenggunaPage> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: ListTile(
-                        // ================= AVATAR =================
                         leading: CircleAvatar(
                           backgroundColor: role == 'admin'
                               ? Colors.red[300]
@@ -140,25 +140,17 @@ class _PenggunaPageState extends State<PenggunaPage> {
                           child:
                               const Icon(Icons.person, color: Colors.white),
                         ),
-
-                        // ================= EMAIL =================
                         title: Text(
-                          user['email']?.toString() ??
-                              'Tidak ada email',
+                          user['email'] ?? 'Tidak ada email',
                           style: const TextStyle(
                               fontWeight: FontWeight.bold),
                         ),
-
-                        // ================= ROLE =================
                         subtitle: Text(
                           "Role: ${role.toUpperCase()}",
                         ),
-
-                        // ================= AKSI =================
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Tombol edit
                             IconButton(
                               icon: const Icon(Icons.edit_outlined,
                                   color: Colors.blue),
@@ -177,8 +169,6 @@ class _PenggunaPageState extends State<PenggunaPage> {
                                 }
                               },
                             ),
-
-                            // Tombol hapus
                             IconButton(
                               icon: const Icon(
                                   Icons.delete_outline,
@@ -214,8 +204,6 @@ class _PenggunaPageState extends State<PenggunaPage> {
               builder: (_) => const TambahPenggunaPage(),
             ),
           );
-
-          // Jika berhasil menambah user → refresh
           if (result == true) {
             fetchPengguna();
           }

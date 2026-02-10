@@ -24,79 +24,91 @@ class _TambahPenggunaPageState extends State<TambahPenggunaPage> {
   // =========================================================
   // LOGIKA SIMPAN DATA (AUTH + DATABASE) - SUDAH DIPERBAIKI
   // =========================================================
-  Future<void> _simpanData() async {
-    // 1. Validasi Input
-    String namaValue = _namaController.text.trim();
-    String emailValue = _emailController.text.trim();
-    String passwordValue = _passwordController.text.trim();
+ Future<void> _simpanData() async {
+  String namaValue = _namaController.text.trim();
+  String emailValue = _emailController.text.trim();
+  String passwordValue = _passwordController.text.trim();
 
-    if (namaValue.isEmpty || emailValue.isEmpty || passwordValue.isEmpty) {
-      _showSnackBar('⚠️ Semua data wajib diisi!', Colors.orange);
-      return;
-    }
-
-    if (passwordValue.length < 6) {
-      _showSnackBar('⚠️ Password minimal 6 karakter!', Colors.orange);
-      return;
-    }
-
-    // Tutup keyboard
-    FocusScope.of(context).unfocus();
-    setState(() => _isLoading = true);
-
-    try {
-      // 2. PROSES DAFTAR KE AUTH SUPABASE
-      // Note: Pastikan di dashboard Supabase > Auth > Providers > Email, 
-      // bagian "Confirm Email" DIMATIKAN jika tidak ingin verifikasi email manual.
-      final AuthResponse res = await supabase.auth.signUp(
-        email: emailValue,
-        password: passwordValue,
-        data: {
-          'full_name': namaValue,
-          'role': _sebagai.toLowerCase(),
-        },
-      );
-
-      final user = res.user;
-
-      if (user != null) {
-        // 3. PROSES SIMPAN KE TABEL PROFILES (DENGAN RE-TRY LOGIC)
-        // Menggunakan upsert agar jika id sudah ada akan diupdate, jika belum akan ditambah
-        await supabase.from('profiles').upsert({
-          'id': user.id, // ID diambil dari Auth UID
-          'Nama': namaValue, 
-          'email': emailValue,
-          'role': _sebagai.toLowerCase(),
-          'created_at': DateTime.now().toIso8601String(),
-        });
-
-        if (mounted) {
-          _showSnackBar('✅ Pengguna berhasil ditambahkan!', Colors.green);
-          
-          // Reset form setelah berhasil
-          _namaController.clear();
-          _emailController.clear();
-          _passwordController.clear();
-
-          // Kembali ke halaman sebelumnya setelah 1 detik
-          await Future.delayed(const Duration(seconds: 1));
-          Navigator.pop(context, true);
-        }
-      }
-    } on AuthException catch (error) {
-      // Menangani error rate limit (terlalu sering klik)
-      if (error.statusCode == '429' || error.message.contains('seconds')) {
-        _showSnackBar('⏳ Terlalu banyak percobaan. Tunggu sebentar lagi.', Colors.red.shade800);
-      } else {
-        _showSnackBar('❌ Gagal Daftar: ${error.message}', Colors.red);
-      }
-    } catch (e) {
-      debugPrint('Sistem Error: $e');
-      _showSnackBar('❌ Terjadi kesalahan pada server database', Colors.red);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  if (namaValue.isEmpty || emailValue.isEmpty || passwordValue.isEmpty) {
+    _showSnackBar('⚠️ Semua data wajib diisi!', Colors.orange);
+    return;
   }
+
+  if (passwordValue.length < 6) {
+    _showSnackBar('⚠️ Password minimal 6 karakter!', Colors.orange);
+    return;
+  }
+
+  FocusScope.of(context).unfocus();
+  setState(() => _isLoading = true);
+
+  try {
+    debugPrint('🟡 Mulai proses signUp...');
+    debugPrint('Nama   : $namaValue');
+    debugPrint('Email  : $emailValue');
+    debugPrint('Role   : ${_sebagai.toLowerCase()}');
+
+    final AuthResponse res = await supabase.auth.signUp(
+      email: emailValue,
+      password: passwordValue,
+      data: {
+        'full_name': namaValue,
+        'role': _sebagai.toLowerCase(),
+      },
+    );
+
+    final user = res.user;
+
+    debugPrint('🟢 AuthResponse diterima');
+    debugPrint('User ID : ${user?.id}');
+    debugPrint('Email   : ${user?.email}');
+
+    if (user == null) {
+      throw Exception('User NULL setelah signUp');
+    }
+
+    debugPrint('✅ SignUp sukses');
+    debugPrint('📌 Profiles akan dibuat otomatis oleh trigger DB');
+
+    if (mounted) {
+      _showSnackBar('✅ Pengguna berhasil ditambahkan!', Colors.green);
+
+      _namaController.clear();
+      _emailController.clear();
+      _passwordController.clear();
+
+      await Future.delayed(const Duration(seconds: 1));
+      Navigator.pop(context, true);
+    }
+  } on AuthException catch (error) {
+    debugPrint('❌ AuthException');
+    debugPrint('StatusCode : ${error.statusCode}');
+    debugPrint('Message    : ${error.message}');
+
+    if (error.statusCode == '429' ||
+        error.message.toLowerCase().contains('seconds')) {
+      _showSnackBar(
+        '⏳ Terlalu banyak percobaan. Tunggu sebentar.',
+        Colors.red.shade800,
+      );
+    } else {
+      _showSnackBar('❌ Gagal Daftar: ${error.message}', Colors.red);
+    }
+  } catch (e, s) {
+    debugPrint('❌ SISTEM ERROR');
+    debugPrint(e.toString());
+    debugPrint(s.toString());
+
+    _showSnackBar(
+      '❌ Terjadi kesalahan pada server',
+      Colors.red,
+    );
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+    debugPrint('🔵 Proses selesai');
+  }
+}
+
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(

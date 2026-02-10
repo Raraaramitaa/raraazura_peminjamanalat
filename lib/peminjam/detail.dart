@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+// Import halaman keranjang agar bisa melakukan navigasi
+// ignore: unused_import
+import 'package:peminjam_alat/peminjam/alat/keranjang.dart';
+import 'package:peminjam_alat/peminjam/keranjang.dart'; 
 
 class DetailAlatPage extends StatefulWidget {
   final Map<String, dynamic> alat;
@@ -14,6 +18,14 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Mengambil data dari map alat yang dikirim
+    final String name = widget.alat['nama_alat'] ?? 'Nama Alat';
+    final String? fotoUrl = widget.alat['foto_url'];
+    final int stok = widget.alat['stok'] ?? 1; 
+    final String deskripsi = widget.alat['deskripsi'] ?? 
+        'Spesifikasi tidak tersedia untuk alat ini.';
+    final String kategori = widget.alat['kategori'] ?? 'Umum';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -32,55 +44,60 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView( 
         padding: const EdgeInsets.all(25.0),
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: const Color(0xFFB4C8CC), // Warna background sesuai gambar
+            color: const Color(0xFFB4C8CC),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 30),
-              // Gambar Produk
+              // Gambar Produk Dinamis
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: widget.alat['foto_url'] != null
+                child: (fotoUrl != null && fotoUrl.isNotEmpty)
                     ? Image.network(
-                        widget.alat['foto_url'],
+                        fotoUrl,
                         height: 180,
                         fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100),
                       )
-                    : const Icon(Icons.laptop_mac, size: 150),
+                    : const Icon(Icons.inventory_2, size: 150, color: Colors.white70),
               ),
               const SizedBox(height: 20),
-              // Nama dan Spesifikasi
+              // Nama dan Deskripsi
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.alat['nama_alat'] ?? 'SAMSUNG Galaxy Book 4',
+                      name,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    // List Spesifikasi
-                    _buildSpecItem('Layar anti-silau LED full-HD 15,6 inci'),
-                    _buildSpecItem('Intel Core 7 CPU 150U'),
-                    _buildSpecItem('RAM LPDDR4x-16GB'),
-                    _buildSpecItem('Windows 11'),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Deskripsi / Spesifikasi:",
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      deskripsi,
+                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 30),
-              // Input Quantity (Plus Minus)
+              // Input Quantity
               Container(
                 width: 220,
                 decoration: BoxDecoration(
@@ -102,13 +119,13 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                       ),
                     ),
                     _buildQtyBtn(Icons.add, () {
-                      setState(() => quantity++);
+                      if (quantity < stok) setState(() => quantity++);
                     }),
                   ],
                 ),
               ),
               const SizedBox(height: 15),
-              // Info Stok
+              // Info Stok Dinamis
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
@@ -116,32 +133,46 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                   border: Border.all(color: Colors.black87),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
-                  'Stok Tersedia: 1',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                child: Text(
+                  'Stok Tersedia: $stok',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ),
-              const SizedBox(height: 10),
-              // Tombol Keranjang
+              const SizedBox(height: 20),
+              // Tombol Keranjang: Terhubung ke Halaman Keranjang
               Padding(
                 padding: const EdgeInsets.only(bottom: 30),
                 child: ElevatedButton(
                   onPressed: () {
-                    // Logika tambah ke keranjang
+                    // Navigasi ke KeranjangPage sambil mengirim data alat yang dipilih
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => KeranjangPage(
+                          itemBaru: {
+                            'nama': name,
+                            'kategori': kategori,
+                            'status': widget.alat['status'] ?? 'Tersedia',
+                            'jumlah': quantity,
+                            'foto': fotoUrl,
+                          },
+                        ),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB4C8CC),
+                    backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
                     elevation: 0,
                     side: const BorderSide(color: Colors.black87),
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
                   child: const Text(
-                    'Keranjang',
-                    style: TextStyle(fontWeight: FontWeight.w500),
+                    'Tambah ke Keranjang',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -152,35 +183,11 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
     );
   }
 
-  Widget _buildSpecItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 12, color: Colors.black87),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildQtyBtn(IconData icon, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          border: Border(
-            right: icon == Icons.remove ? const BorderSide(color: Colors.grey) : BorderSide.none,
-            left: icon == Icons.add ? const BorderSide(color: Colors.grey) : BorderSide.none,
-          ),
-        ),
         child: Icon(icon, size: 20),
       ),
     );
