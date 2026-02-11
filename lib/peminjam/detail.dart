@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-// Import halaman keranjang agar bisa melakukan navigasi
-// ignore: unused_import
-import 'package:peminjam_alat/peminjam/alat/keranjang.dart';
 import 'package:peminjam_alat/peminjam/keranjang.dart'; 
 
 class DetailAlatPage extends StatefulWidget {
@@ -14,6 +11,7 @@ class DetailAlatPage extends StatefulWidget {
 }
 
 class _DetailAlatPageState extends State<DetailAlatPage> {
+  // Inisialisasi jumlah awal
   int quantity = 1;
 
   @override
@@ -21,6 +19,7 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
     // Mengambil data dari map alat yang dikirim
     final String name = widget.alat['nama_alat'] ?? 'Nama Alat';
     final String? fotoUrl = widget.alat['foto_url'];
+    // Pastikan stok adalah angka, jika null beri default 1
     final int stok = widget.alat['stok'] ?? 1; 
     final String deskripsi = widget.alat['deskripsi'] ?? 
         'Spesifikasi tidak tersedia untuk alat ini.';
@@ -56,7 +55,7 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 30),
-              // Gambar Produk Dinamis
+              // Gambar Produk
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: (fotoUrl != null && fotoUrl.isNotEmpty)
@@ -97,20 +96,28 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                 ),
               ),
               const SizedBox(height: 30),
-              // Input Quantity
+
+              // --- BAGIAN TOMBOL TAMBAH KURANG (QUANTITY) ---
               Container(
                 width: 220,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border.all(color: Colors.grey),
+                  border: Border.all(color: Colors.grey.shade400),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Tombol Kurangi (-)
                     _buildQtyBtn(Icons.remove, () {
-                      if (quantity > 1) setState(() => quantity--);
+                      if (quantity > 1) {
+                        setState(() {
+                          quantity--;
+                        });
+                      }
                     }),
+                    
+                    // Angka Quantity
                     Text(
                       '$quantity',
                       style: const TextStyle(
@@ -118,12 +125,25 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    
+                    // Tombol Tambah (+)
                     _buildQtyBtn(Icons.add, () {
-                      if (quantity < stok) setState(() => quantity++);
+                      if (quantity < stok) {
+                        setState(() {
+                          quantity++;
+                        });
+                      } else {
+                        // Opsional: Tampilkan pesan jika melebihi stok
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Jumlah melebihi stok tersedia!")),
+                        );
+                      }
                     }),
                   ],
                 ),
               ),
+              // ----------------------------------------------
+
               const SizedBox(height: 15),
               // Info Stok Dinamis
               Container(
@@ -139,12 +159,11 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Tombol Keranjang: Terhubung ke Halaman Keranjang
+              // Tombol Keranjang
               Padding(
                 padding: const EdgeInsets.only(bottom: 30),
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigasi ke KeranjangPage sambil mengirim data alat yang dipilih
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -183,12 +202,17 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
     );
   }
 
+  // Widget untuk tombol plus dan minus agar kode lebih rapi
   Widget _buildQtyBtn(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, size: 20),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(5),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          child: Icon(icon, size: 20, color: Colors.black87),
+        ),
       ),
     );
   }

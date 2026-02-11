@@ -3,42 +3,43 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// --- IMPORT FILE PENDUKUNG ---
 import 'tambah_alat.dart';
 import 'edit_alat.dart';
-
 import 'package:peminjam_alat/auth/logout.dart';
 import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/pengguna/pengguna.dart';
 import 'package:peminjam_alat/kategori/kategori.dart' as kat;
-import 'package:peminjam_alat/riwayat/riwayat.dart'; // Pastikan path import ini sesuai folder Anda
+import 'package:peminjam_alat/riwayat/riwayat.dart';
 
 // =========================================================
-// DIALOG HAPUS
+// DIALOG KONFIRMASI HAPUS
 // =========================================================
 class HapusAlatDialog extends StatelessWidget {
   final VoidCallback onConfirm;
-
   const HapusAlatDialog({super.key, required this.onConfirm});
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Hapus Alat"),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text("Hapus Alat", style: TextStyle(fontWeight: FontWeight.bold)),
       content: const Text("Apakah Anda yakin ingin menghapus alat ini?"),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Batal"),
+          child: const Text("Batal", style: TextStyle(color: Colors.grey)),
         ),
-        TextButton(
-          onPressed: () {
-            onConfirm();
-            Navigator.pop(context);
-          },
-          child: const Text(
-            "Hapus",
-            style: TextStyle(color: Colors.red),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.redAccent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
+          onPressed: () {
+            Navigator.pop(context); 
+            onConfirm(); 
+          },
+          child: const Text("Hapus", style: TextStyle(color: Colors.white)),
         ),
       ],
     );
@@ -46,7 +47,7 @@ class HapusAlatDialog extends StatelessWidget {
 }
 
 // =========================================================
-// HALAMAN ALAT
+// HALAMAN UTAMA ALAT
 // =========================================================
 class AlatPage extends StatefulWidget {
   const AlatPage({super.key});
@@ -60,9 +61,8 @@ class _AlatPageState extends State<AlatPage> {
 
   List<Map<String, dynamic>> alatList = [];
   List<Map<String, dynamic>> filteredAlatList = [];
-
   bool isLoading = true;
-  final int _currentIndex = 2; // Index untuk Alat
+  final int _currentIndex = 2;
 
   final TextEditingController _searchController = TextEditingController();
   String _selectedKategori = "Semua";
@@ -70,7 +70,7 @@ class _AlatPageState extends State<AlatPage> {
   @override
   void initState() {
     super.initState();
-    fetchAlat();
+    WidgetsBinding.instance.addPostFrameCallback((_) => fetchAlat());
     _searchController.addListener(_applyFilters);
   }
 
@@ -80,259 +80,237 @@ class _AlatPageState extends State<AlatPage> {
     super.dispose();
   }
 
-  // =========================================================
-  // FETCH & FILTER
-  // =========================================================
+  // --- LOGIKA AMBIL DATA ---
   Future<void> fetchAlat() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
+
     try {
       final data = await supabase
           .from('alat')
           .select()
           .order('id_alat', ascending: true);
 
-      alatList = List<Map<String, dynamic>>.from(data as List);
-      _applyFilters();
+      if (mounted) {
+        setState(() {
+          alatList = List<Map<String, dynamic>>.from(data);
+          _applyFilters();
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal memuat data: $e")),
-      );
+      if (mounted) {
+        setState(() => isLoading = false);
+        _showToast("Gagal memuat data: $e", Colors.red);
+      }
     }
-    setState(() => isLoading = false);
   }
 
   void _applyFilters() {
     final query = _searchController.text.toLowerCase();
-
     setState(() {
       filteredAlatList = alatList.where((alat) {
         final nama = (alat['nama_alat'] ?? '').toString().toLowerCase();
         final kategori = (alat['kategori'] ?? '').toString();
 
-        return nama.contains(query) &&
-            (_selectedKategori == "Semua" ||
-                kategori == _selectedKategori);
+        final matchesSearch = nama.contains(query);
+        final matchesKategori =
+            (_selectedKategori == "Semua" || kategori == _selectedKategori);
+
+        return matchesSearch && matchesKategori;
       }).toList();
     });
   }
 
-  Future<void> hapusAlat(int id) async {
-    await supabase.from('alat').delete().eq('id_alat', id);
-    fetchAlat();
+  // --- FUNGSI HAPUS ALAT (DI-UPDATE) ---
+  Future<void> hapusAlat(dynamic id) async {
+    if (id == null) return;
+
+    // Tampilkan Loading Indikator agar user tahu proses sedang berjalan
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // 1. Eksekusi hapus di database Supabase
+      // Gunakan eq('id_alat', id) dan pastikan ID yang dikirim benar
+      await supabase
+          .from('alat')
+          .delete()
+          .eq('id_alat', id);
+
+      // 2. Tutup loading indikator
+      if (mounted) Navigator.pop(context);
+
+      // 3. Update list lokal hanya jika request ke server berhasil
+      if (mounted) {
+        setState(() {
+          alatList.removeWhere((item) => item['id_alat'] == id);
+          _applyFilters();
+        });
+        _showToast("Alat berhasil dihapus secara permanen", Colors.green);
+      }
+    } catch (e) {
+      // Tutup loading jika error
+      if (mounted) Navigator.pop(context);
+      
+      _showToast("Gagal menghapus! Pastikan alat tidak sedang dipinjam (Foreign Key Error).", Colors.red);
+      debugPrint("Error hapus: $e");
+    }
+  }
+
+  void _showToast(String msg, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Alat berhasil dihapus"),
-        backgroundColor: Colors.green,
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  // =========================================================
-  // LOGIKA NAVIGASI (DIPERBAIKI)
-  // =========================================================
+  // --- NAVIGASI ---
   void _onNavTapped(int index) {
     if (index == _currentIndex) return;
-
     Widget page;
     switch (index) {
-      case 0:
-        page = const DashboardAdminPage();
-        break;
-      case 1:
-        page = const PenggunaPage();
-        break;
-      case 2:
-        return; // Sudah di halaman Alat
-      case 3:
-        page = const kat.KategoriPage();
-        break;
-      case 4:
-        // Navigasi ke RiwayatPage yang asli (BUKAN PeminjamanPage kosong)
-        page = const RiwayatPage(); 
-        break;
-      case 5:
-        page = const LogoutPage();
-        break;
-      default:
-        return;
+      case 0: page = const DashboardAdminPage(); break;
+      case 1: page = const PenggunaPage(); break;
+      case 3: page = const kat.KategoriPage(); break;
+      case 4: page = const RiwayatPage(); break;
+      case 5: page = const LogoutPage(); break;
+      default: return;
     }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => page),
-    );
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
   }
 
-  // =========================================================
-  // UI
-  // =========================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: Column(
         children: [
-          // HEADER
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
-            decoration: const BoxDecoration(
-              color: Color(0xFF8FAFB6),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(35),
-                bottomRight: Radius.circular(35),
-              ),
-            ),
-            child: Column(
-              children: [
-                const Text("Admin",
-                    style: TextStyle(color: Colors.white)),
-                const SizedBox(height: 6),
-                const CircleAvatar(
-                  radius: 26,
-                  backgroundColor: Colors.white54,
-                  child: Icon(Icons.person, color: Colors.white),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  "Rara Aramita Azura",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 15),
-
-                // SEARCH
-                Container(
-                  height: 45,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: "Cari Alat...",
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () => _searchController.clear(),
-                            )
-                          : null,
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // FILTER KATEGORI
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _filterIcon("Semua", Icons.grid_view, "Semua"),
-                  _filterIcon("Laptop", Icons.laptop, "Laptop"),
-                  _filterIcon("Proyektor", Icons.videocam, "Proyektor"),
-                  _filterIcon("Camera", Icons.camera_alt, "Camera"),
-                  _filterIcon("Mouse", Icons.mouse, "Mouse"),
-                ],
-              ),
-            ),
-          ),
-
-          const Divider(),
-
-          // GRID
+          _buildHeader(),
+          _buildKategoriFilter(),
+          const Divider(height: 1),
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredAlatList.isEmpty
-                    ? _emptyState()
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(15),
-                        itemCount: filteredAlatList.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          childAspectRatio: 0.7,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemBuilder: (_, i) =>
-                            _alatCard(filteredAlatList[i]),
-                      ),
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF8FAFB6)))
+                : RefreshIndicator(
+                    onRefresh: fetchAlat,
+                    child: filteredAlatList.isEmpty ? _emptyState() : _buildGrid(),
+                  ),
           ),
         ],
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF8FAFB6),
         onPressed: () async {
-          await Navigator.push(
+          final result = await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => TambahAlatPage(imageFile: null),
-            ),
+            MaterialPageRoute(builder: (_) => TambahAlatPage(imageFile: null)),
           );
-          fetchAlat();
+          if (result == true) fetchAlat();
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
-
-      // NAVBAR ADMIN
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onNavTapped,
         backgroundColor: const Color(0xFF8FAFB6),
         selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.black,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
+        unselectedItemColor: Colors.black54,
         items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined), label: 'Beranda'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Pengguna'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.category_outlined), label: 'Kategori'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle_outlined), label: 'Akun'),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Pengguna'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Alat'),
+          BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Kategori'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Riwayat'),
+          BottomNavigationBarItem(icon: Icon(Icons.account_circle_outlined), label: 'Akun'),
         ],
       ),
     );
   }
 
-  // =========================================================
-  // WIDGET BANTUAN
-  // =========================================================
-  Widget _emptyState() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        Icon(Icons.search_off, size: 80, color: Colors.grey),
-        SizedBox(height: 10),
-        Text("Alat tidak ditemukan"),
-      ],
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
+      decoration: const BoxDecoration(
+        color: Color(0xFF8FAFB6),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(35),
+          bottomRight: Radius.circular(35),
+        ),
+      ),
+      child: Column(
+        children: [
+          const Text("Admin", style: TextStyle(color: Colors.white)),
+          const SizedBox(height: 6),
+          const CircleAvatar(
+            radius: 26,
+            backgroundColor: Colors.white54,
+            child: Icon(Icons.person, color: Colors.white),
+          ),
+          const SizedBox(height: 6),
+          const Text("Rara Aramita Azura", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 15),
+          Container(
+            height: 45,
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25)),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: "Cari Alat...",
+                prefixIcon: const Icon(Icons.search),
+                border: InputBorder.none,
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKategoriFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _filterIcon("Semua", Icons.grid_view, "Semua"),
+            _filterIcon("Laptop", Icons.laptop, "Laptop"),
+            _filterIcon("Proyektor", Icons.videocam, "Proyektor"),
+            _filterIcon("Camera", Icons.camera_alt, "Camera"),
+            _filterIcon("Mouse", Icons.mouse, "Mouse"),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _filterIcon(String label, IconData icon, String key) {
-    final selected = _selectedKategori == key;
+    final bool isSelected = _selectedKategori == key;
     return GestureDetector(
       onTap: () {
-        _selectedKategori = key;
-        _applyFilters();
+        setState(() {
+          _selectedKategori = key;
+          _applyFilters();
+        });
       },
       child: Container(
         width: 80,
@@ -342,18 +320,30 @@ class _AlatPageState extends State<AlatPage> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: selected
-                    ? const Color(0xFF4A6A70)
-                    : const Color(0xFF8FAFB6),
+                color: isSelected ? const Color(0xFF4A6A70) : const Color(0xFF8FAFB6),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: Colors.white),
             ),
             const SizedBox(height: 5),
-            Text(label, style: const TextStyle(fontSize: 10)),
+            Text(label, style: TextStyle(fontSize: 10, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(15),
+      itemCount: filteredAlatList.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.7,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemBuilder: (_, i) => _alatCard(filteredAlatList[i]),
     );
   }
 
@@ -362,75 +352,97 @@ class _AlatPageState extends State<AlatPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
       ),
       child: Stack(
         children: [
           Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                  child: item['foto_url'] != null
-                      ? Image.network(item['foto_url'], fit: BoxFit.cover)
-                      : const Icon(Icons.image, size: 40),
+                  child: item['foto_url'] != null && item['foto_url'].toString().isNotEmpty
+                      ? Image.network(
+                          item['foto_url'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.grey),
+                        )
+                      : Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey)),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  item['nama_alat'] ?? '',
+                  item['nama_alat'] ?? 'Tanpa Nama',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
           ),
+          // TOMBOL EDIT
           Positioned(
-            top: 6,
-            right: 6,
-            child: GestureDetector(
+            top: 5,
+            right: 5,
+            child: InkWell(
               onTap: () async {
-                await Navigator.push(
+                final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => EditAlatPage(data: item),
-                  ),
+                  MaterialPageRoute(builder: (_) => EditAlatPage(data: item)),
                 );
-                fetchAlat();
+                if (result == true) fetchAlat();
               },
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 12,
-                backgroundColor: Colors.blue,
-                child: Icon(Icons.edit, size: 14, color: Colors.white),
+                backgroundColor: Colors.blue.withOpacity(0.9),
+                child: const Icon(Icons.edit, size: 14, color: Colors.white),
               ),
             ),
           ),
+          // TOMBOL DELETE
           Positioned(
-            top: 6,
-            left: 6,
-            child: GestureDetector(
+            top: 5,
+            left: 5,
+            child: InkWell(
               onTap: () {
                 showDialog(
                   context: context,
-                  builder: (_) => HapusAlatDialog(
+                  barrierDismissible: false,
+                  builder: (context) => HapusAlatDialog(
                     onConfirm: () => hapusAlat(item['id_alat']),
                   ),
                 );
               },
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 12,
-                backgroundColor: Colors.redAccent,
-                child:
-                    Icon(Icons.delete, size: 14, color: Colors.white),
+                backgroundColor: Colors.redAccent.withOpacity(0.9),
+                child: const Icon(Icons.delete, size: 14, color: Colors.white),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _emptyState() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: const [
+        SizedBox(height: 100),
+        Center(
+          child: Column(
+            children: [
+              Icon(Icons.search_off, size: 80, color: Colors.grey),
+              SizedBox(height: 10),
+              Text("Alat tidak ditemukan", style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

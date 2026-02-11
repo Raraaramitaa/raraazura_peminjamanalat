@@ -1,12 +1,21 @@
+// Mengabaikan warning unused import & penggunaan context async
 // ignore_for_file: unused_import, use_build_context_synchronously
 
+// Import package utama Flutter
 import 'package:flutter/material.dart';
+
+// Import Supabase untuk autentikasi & database
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Import halaman berdasarkan role
 import 'package:peminjam_alat/admin/dashboard_admin.dart';
 import 'package:peminjam_alat/petugas/dashboard_petugas.dart';
 import 'package:peminjam_alat/peminjam/dashboard_peminjam.dart';
 
+
+// =========================================================
+// HALAMAN LOGIN
+// =========================================================
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -15,13 +24,24 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+
+  // Controller untuk input email
   final _emailController = TextEditingController();
+
+  // Controller untuk input password
   final _passwordController = TextEditingController();
+
+  // Untuk menyembunyikan / menampilkan password
   bool _obscure = true;
+
+  // Status loading saat proses login
   bool _loading = false;
 
+  // Inisialisasi Supabase client
   final SupabaseClient supabase = Supabase.instance.client;
 
+
+  // Dispose controller saat halaman ditutup (menghindari memory leak)
   @override
   void dispose() {
     _emailController.dispose();
@@ -29,39 +49,59 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+
+  // =========================================================
+  // FUNGSI LOGIN
+  // =========================================================
   Future<void> _login() async {
+
+    // Ambil nilai dari input dan hilangkan spasi
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    // Validasi jika kosong
     if (email.isEmpty || password.isEmpty) {
       _showSnackBar('Email dan password wajib diisi');
       return;
     }
 
+    // Aktifkan loading
     setState(() => _loading = true);
 
     try {
+
+      // Proses login menggunakan Supabase Auth
       final AuthResponse res = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
+      // Ambil data user dari response
       final user = res.user;
+
+      // Jika user tidak ditemukan
       if (user == null) throw const AuthException('User tidak ditemukan');
 
+      // Ambil role dari tabel profiles berdasarkan id user
       final profile = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .maybeSingle();
 
+      // Jika profil tidak ada
       if (profile == null) throw 'Data profil tidak ditemukan di database';
       
+      // Cek apakah widget masih mounted (aman untuk navigasi)
       if (!mounted) return;
 
+      // Ambil role
       final String role = profile['role'];
+
+      // Variabel tujuan halaman
       Widget targetPage;
 
+      // Navigasi berdasarkan role
       switch (role) {
         case 'admin':
           targetPage = const DashboardAdminPage(); 
@@ -76,36 +116,59 @@ class _LoginPageState extends State<LoginPage> {
           throw 'Role "$role" tidak dikenali oleh sistem';
       }
 
+      // Pindah halaman dan hapus semua halaman sebelumnya
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => targetPage),
         (route) => false,
       );
 
-    } on AuthException catch (e) {
+    } 
+    // Jika error dari Supabase Auth
+    on AuthException catch (e) {
       _showSnackBar(e.message);
-    } catch (e) {
+    } 
+    // Jika error lainnya
+    catch (e) {
       _showSnackBar('Gagal login: ${e.toString()}');
-    } finally {
+    } 
+    finally {
+      // Matikan loading jika widget masih aktif
       if (mounted) setState(() => _loading = false);
     }
   }
 
+
+  // =========================================================
+  // MENAMPILKAN SNACKBAR
+  // =========================================================
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
+
+  // =========================================================
+  // BUILD UI
+  // =========================================================
   @override
   Widget build(BuildContext context) {
+
+    // GestureDetector untuk menutup keyboard saat tap luar field
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
+
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
+
         body: SingleChildScrollView(
           child: Column(
             children: [
+
               // ================= HEADER =================
               Container(
                 width: double.infinity,
@@ -129,10 +192,10 @@ class _LoginPageState extends State<LoginPage> {
               
               const SizedBox(height: 30),
               
-              // ================= LOGO SECTION (DIPERBESAR MAKSIMAL) =================
+              // ================= LOGO =================
               Container(
-                height: 280, // UKURAN RAKSASA
-                width: 280,  // UKURAN RAKSASA
+                height: 280,
+                width: 280,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
@@ -147,16 +210,18 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(30),
                   child: Image.asset(
                     'assets/images/logo.png',
-                    fit: BoxFit.contain, // Memastikan seluruh logo terlihat tanpa terpotong
+                    fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.developer_board, size: 150, color: Color(0xFF0C3B5A)),
+                        const Icon(Icons.developer_board,
+                            size: 150,
+                            color: Color(0xFF0C3B5A)),
                   ),
                 ),
               ),
               
               const SizedBox(height: 20),
 
-              // ================= FORM UTAMA =================
+              // ================= FORM LOGIN =================
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 40),
                 padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 25),
@@ -174,12 +239,17 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 child: Column(
                   children: [
+
+                    // Field Email
                     _buildTextField(
                       controller: _emailController,
                       hint: 'Masukkan Email',
                       icon: Icons.email_outlined,
                     ),
+
                     const SizedBox(height: 25),
+
+                    // Field Password
                     _buildTextField(
                       controller: _passwordController,
                       hint: 'Masukkan Password',
@@ -188,9 +258,10 @@ class _LoginPageState extends State<LoginPage> {
                       obscure: _obscure,
                       onToggle: () => setState(() => _obscure = !_obscure),
                     ),
+
                     const SizedBox(height: 45),
                     
-                    // Button Masuk
+                    // Tombol Masuk
                     SizedBox(
                       width: 180,
                       height: 42,
@@ -208,7 +279,10 @@ class _LoginPageState extends State<LoginPage> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Text(
                                 'Masuk',
@@ -223,6 +297,7 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 50),
             ],
           ),
@@ -231,6 +306,10 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+
+  // =========================================================
+  // WIDGET TEXTFIELD CUSTOM
+  // =========================================================
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -239,6 +318,7 @@ class _LoginPageState extends State<LoginPage> {
     bool obscure = false,
     VoidCallback? onToggle,
   }) {
+
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
@@ -258,7 +338,7 @@ class _LoginPageState extends State<LoginPage> {
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    obscure ? Icons.visibility_off : Icons.visibility, 
+                    obscure ? Icons.visibility_off : Icons.visibility,
                     color: Colors.black87,
                     size: 20,
                   ),
@@ -269,7 +349,8 @@ class _LoginPageState extends State<LoginPage> {
           hintStyle: const TextStyle(color: Colors.white, fontSize: 13),
           filled: true,
           fillColor: const Color(0xFF8FAFB6),
-          contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(25),
             borderSide: const BorderSide(color: Colors.black87),

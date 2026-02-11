@@ -1,10 +1,12 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
-
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:peminjam_alat/peminjam/pinjam/pinjam_alat.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+// ignore: unused_import
+import 'pinjam_alat.dart'; 
 
 class AjukanPeminjamanPage extends StatefulWidget {
   final List<Map<String, dynamic>> items;
-
   const AjukanPeminjamanPage({super.key, required this.items});
 
   @override
@@ -12,252 +14,99 @@ class AjukanPeminjamanPage extends StatefulWidget {
 }
 
 class _AjukanPeminjamanPageState extends State<AjukanPeminjamanPage> {
-  // 1. Definisikan Controller untuk setiap input agar bisa diketik dan diambil datanya
-  final TextEditingController _tglAmbilController = TextEditingController(text: "12/01/2026");
-  final TextEditingController _jamAmbilController = TextEditingController(text: "10:00");
-  
-  final TextEditingController _tglKembaliController = TextEditingController(text: "15/01/2026");
-  final TextEditingController _jamKembaliController = TextEditingController(text: "14:00");
-  
-  final TextEditingController _tglTenggatController = TextEditingController(text: "14/01/2026");
-  final TextEditingController _jamTenggatController = TextEditingController(text: "14:00");
+  final SupabaseClient supabase = Supabase.instance.client;
 
-  @override
-  void dispose() {
-    // Bersihkan controller saat widget dihapus dari memori
-    _tglAmbilController.dispose();
-    _jamAmbilController.dispose();
-    _tglKembaliController.dispose();
-    _jamKembaliController.dispose();
-    _tglTenggatController.dispose();
-    _jamTenggatController.dispose();
-    super.dispose();
+  // Input tetap menggunakan format teks agar aman dari error tipe data
+  final TextEditingController _tglAmbil = TextEditingController(text: "12/02/2026");
+  final TextEditingController _jamAmbil = TextEditingController(text: "10:00");
+  final TextEditingController _tglKembali = TextEditingController(text: "15/02/2026");
+  final TextEditingController _jamKembali = TextEditingController(text: "14:00");
+
+  Future<void> _kirimPengajuan() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final user = supabase.auth.currentUser;
+      final String userEmail = user?.email ?? "Peminjam Umum";
+
+      for (var item in widget.items) {
+        // STEP 1: Masuk ke tabel Peminjaman
+        await supabase.from('peminjaman').insert({
+          'nama_alat': item['nama'].toString(),
+          'nama_peminjam': userEmail,
+          'jumlah': item['jumlah'].toString(),
+          'tgl_ambil': _tglAmbil.text,
+          'jam_ambil': _jamAmbil.text,
+          'tgl_kembali': _tglKembali.text,
+          'jam_kembali': _jamKembali.text,
+          'status': 'Menunggu',
+        });
+
+        // STEP 2: OTOMATIS Masuk ke Riwayat (log_aktivitas)
+        await supabase.from('log_aktivitas').insert({
+          'nama_peminjam': userEmail,
+          'nama_alat': item['nama'].toString(),
+          'status': 'Dipinjam', 
+        });
+      }
+
+      Navigator.pop(context); // Tutup loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Berhasil dikirim ke Dashboard Admin!"), backgroundColor: Colors.green),
+      );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const PinjamAlatPage()),
+        (route) => false,
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      _showErrorDialog(e.toString());
+    }
+  }
+
+  void _showErrorDialog(String msg) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Gagal"),
+        content: Text(msg),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFBCCDCF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF8FAFB6),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Konfirmasi Pinjaman',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // List Item
-                  ...widget.items.map((item) {
-                    return _buildItemCard(item);
-                  // ignore: unnecessary_to_list_in_spreads
-                  }).toList(),
-
-                  const SizedBox(height: 10),
-
-                  _buildSectionTitle("Ambil"),
-                  _buildDateTimeEditRow(_tglAmbilController, _jamAmbilController),
-                  
-                  const SizedBox(height: 15),
-                  _buildSectionTitle("Kembali"),
-                  _buildDateTimeEditRow(_tglKembaliController, _jamKembaliController),
-                  
-                  const SizedBox(height: 15),
-                  _buildSectionTitle("Tenggat Pengembalian"),
-                  _buildDateTimeEditRow(_tglTenggatController, _jamTenggatController),
-                ],
-              ),
-            ),
-          ),
-
-          // Bottom Panel
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Total: ${widget.items.length} jenis alat',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 15),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Logika mengambil data hasil ketikan user:
-                      // String tanggalAmbil = _tglAmbilController.text;
-                      
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Pengajuan Berhasil Dikirim!")),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8FAFB6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Kirim Pengajuan',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
-        ),
-      ),
-    );
-  }
-
-  // 2. Widget yang diperbaiki agar menggunakan TextField (Bisa diketik)
-  Widget _buildDateTimeEditRow(TextEditingController dateCtrl, TextEditingController timeCtrl) {
-    return Row(
-      children: [
-        // Input Tanggal
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: TextField(
-              controller: dateCtrl,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.calendar_month_outlined, size: 20, color: Colors.black87),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                border: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.black45),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.black45),
+      appBar: AppBar(title: const Text("Konfirmasi"), backgroundColor: const Color(0xFF8FAFB6)),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: widget.items.length,
+                itemBuilder: (context, i) => Card(
+                  child: ListTile(title: Text(widget.items[i]['nama']), subtitle: Text("Jumlah: ${widget.items[i]['jumlah']}")),
                 ),
               ),
-              style: const TextStyle(fontSize: 14),
             ),
-          ),
+            TextField(controller: _tglAmbil, decoration: const InputDecoration(labelText: "Tgl Ambil")),
+            TextField(controller: _tglKembali, decoration: const InputDecoration(labelText: "Tgl Kembali")),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8FAFB6), minimumSize: const Size(double.infinity, 50)),
+              onPressed: _kirimPengajuan, 
+              child: const Text("KIRIM PENGAUJAN", style: TextStyle(color: Colors.white)),
+            )
+          ],
         ),
-        const SizedBox(width: 20),
-        // Input Jam
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: TextField(
-              controller: timeCtrl,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.access_time, size: 20, color: Colors.black87),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                border: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.black45),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.black45),
-                ),
-              ),
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildItemCard(Map<String, dynamic> item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: (item['foto'] != null && item['foto'].isNotEmpty)
-                ? Image.network(item['foto'], fit: BoxFit.contain)
-                : const Icon(Icons.laptop_mac, size: 40),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['nama'] ?? 'Alat Tidak Diketahui',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                Text(
-                  item['kategori'] ?? 'Kategori',
-                  style: const TextStyle(color: Colors.grey, fontSize: 11),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  "Jumlah: ${item['jumlah']}",
-                  style: TextStyle(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

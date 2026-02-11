@@ -31,7 +31,12 @@ class HapusAlatDialog extends StatelessWidget {
               SizedBox(
                 width: 100,
                 child: ElevatedButton(
-                  onPressed: onConfirm,
+                  onPressed: () {
+                    // 1. Tutup dialognya dulu agar tidak menumpuk di UI
+                    Navigator.pop(context); 
+                    // 2. Jalankan fungsi hapus (setState & Supabase) di alat.dart
+                    onConfirm(); 
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF8FAFB6),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

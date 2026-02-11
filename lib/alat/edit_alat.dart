@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -17,10 +19,9 @@ class _EditAlatPageState extends State<EditAlatPage> {
   late TextEditingController _stokController;
   
   String? _selectedStatus;
-  String? _selectedKategori;
+  int? _selectedKategoriId; 
   
-  List<String> _kategoriList = []; 
-  // Daftar status yang tersedia di database
+  List<Map<String, dynamic>> _kategoriList = []; 
   final List<String> _statusList = ["Ada", "Dipinjam", "Tersedia"]; 
   
   bool _isLoading = false;
@@ -30,62 +31,31 @@ class _EditAlatPageState extends State<EditAlatPage> {
   void initState() {
     super.initState();
     
-    // 1. Inisialisasi Controller (Null Safety)
+    // Inisialisasi data awal dari widget.data
     _namaController = TextEditingController(text: widget.data['nama_alat']?.toString() ?? "");
     
-    // 2. Deteksi nama kolom stok (stok atau stok_alat)
-    var stokValue = widget.data['stok'] ?? widget.data['stok_alat'] ?? "0";
+    // Penanganan stok yang lebih aman
+    var stokValue = widget.data['stok'] ?? widget.data['stok_alat'] ?? 0;
     _stokController = TextEditingController(text: stokValue.toString());
     
-    // 3. Validasi Status agar tidak error Assertion
-    String? initialStatus = widget.data['status']?.toString();
-    if (_statusList.contains(initialStatus)) {
-      _selectedStatus = initialStatus;
-    } else {
-      _selectedStatus = null; 
-    }
-    
-    // 4. Inisialisasi Kategori awal
-    _selectedKategori = widget.data['kategori']?.toString();
+    _selectedStatus = widget.data['status']?.toString();
+    _selectedKategoriId = widget.data['id_kategori'];
     
     _fetchKategoriList();
   }
 
   Future<void> _fetchKategoriList() async {
     try {
-      // Ambil data kategori dari tabel 'kategori'
-      final response = await supabase.from('kategori').select('nama_kategori');
-      
-      final List<String> fetchedKategori = (response as List)
-          .map((item) => item['nama_kategori'].toString())
-          .toList();
-
+      final response = await supabase.from('kategori').select('id_kategori, nama_kategori');
       if (mounted) {
         setState(() {
-          _kategoriList = fetchedKategori;
-
-          // PERBAIKAN: Tambahkan "Mouse" secara manual jika tidak ada di database
-          if (!_kategoriList.contains("Mouse")) {
-            _kategoriList.add("Mouse");
-          }
-
-          // Tambahkan kategori yang sedang dipilih ke list jika belum terdaftar
-          if (_selectedKategori != null && !_kategoriList.contains(_selectedKategori)) {
-            _kategoriList.add(_selectedKategori!);
-          }
-          
+          _kategoriList = List<Map<String, dynamic>>.from(response);
           _isFetchingKategori = false;
         });
       }
     } catch (e) {
       debugPrint("Error Fetch Kategori: $e");
-      if (mounted) {
-        setState(() {
-          // Jika error, setidaknya list berisi "Mouse" agar tetap bisa dipilih
-          _kategoriList = ["Mouse"];
-          _isFetchingKategori = false;
-        });
-      }
+      if (mounted) setState(() => _isFetchingKategori = false);
     }
   }
 
@@ -96,15 +66,16 @@ class _EditAlatPageState extends State<EditAlatPage> {
     super.dispose();
   }
 
+  // --- FUNGSI UPDATE UTAMA ---
   Future<void> _updateAlat() async {
+    // 1. Validasi Input
     if (_namaController.text.trim().isEmpty) {
       _showSnackBar("Nama alat tidak boleh kosong", Colors.orange);
       return;
     }
 
-    // Ambil ID secara fleksibel (id atau id_alat)
-    final dynamic idAlat = widget.data['id'] ?? widget.data['id_alat']; 
-    final String primaryKeyName = widget.data.containsKey('id') ? 'id' : 'id_alat';
+    // 2. Ambil ID Primer (Sesuaikan nama kolom di database kamu)
+    final dynamic idAlat = widget.data['id_alat']; 
     
     if (idAlat == null) {
       _showSnackBar("Gagal: ID Alat tidak ditemukan!", Colors.red);
@@ -114,32 +85,35 @@ class _EditAlatPageState extends State<EditAlatPage> {
     setState(() => _isLoading = true);
 
     try {
-      Map<String, dynamic> updateData = {
+      // 3. Persiapkan Data Update
+      final Map<String, dynamic> updateData = {
         'nama_alat': _namaController.text.trim(),
         'status': _selectedStatus,
-        'kategori': _selectedKategori,
+        'id_kategori': _selectedKategoriId,
+        'stok': int.tryParse(_stokController.text) ?? 0,
       };
 
-      // Handle perbedaan nama kolom stok
-      if (widget.data.containsKey('stok_alat')) {
-        updateData['stok_alat'] = int.tryParse(_stokController.text) ?? 0;
-      } else {
-        updateData['stok'] = int.tryParse(_stokController.text) ?? 0;
-      }
-
+      // 4. Proses Update ke Supabase
+      // Pastikan kolom 'id_alat' sesuai dengan Primary Key di tabel Supabase kamu
       await supabase
           .from('alat')
           .update(updateData)
-          .eq(primaryKeyName, idAlat);
+          .eq('id_alat', idAlat);
 
       if (mounted) {
-        _showSnackBar("Perubahan berhasil disimpan!", Colors.green);
+        _showSnackBar("✅ Perubahan berhasil disimpan!", Colors.green);
+        
+        // PENTING: Berikan delay sedikit agar user bisa melihat snackbar sebelum pindah
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Navigator.pop dengan nilai 'true' agar halaman sebelumnya tahu ada perubahan
         Navigator.pop(context, true); 
       }
     } on PostgrestException catch (error) {
-       _showSnackBar("Database Error: ${error.message}", Colors.red);
+        _showSnackBar("Database Error: ${error.message}", Colors.red);
     } catch (e) {
-       _showSnackBar("Sistem Error: $e", Colors.red);
+        _showSnackBar("Terjadi kesalahan sistem", Colors.red);
+        debugPrint("Error: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -163,13 +137,17 @@ class _EditAlatPageState extends State<EditAlatPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text("EDIT DATA ALAT", 
           style: TextStyle(color: Colors.black54, fontSize: 16, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: Stack(
         children: [
-          // Background Putih di bagian bawah
+          // Background Decor
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -180,30 +158,36 @@ class _EditAlatPageState extends State<EditAlatPage> {
               ),
             ),
           ),
+          
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Column(
                 children: [
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
+                  // Foto Alat
                   CircleAvatar(
                     radius: 65,
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.grey[200],
-                      backgroundImage: const AssetImage('assets/images/camera.png'), 
+                      backgroundImage: (widget.data['foto_url'] != null && widget.data['foto_url'].toString().isNotEmpty) 
+                        ? NetworkImage(widget.data['foto_url']) 
+                        : const AssetImage('assets/images/camera.png') as ImageProvider, 
                     ),
                   ),
                   const SizedBox(height: 15),
                   Text(_namaController.text,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 25),
 
+                  // Form Inputs
                   _buildTextField("Nama Alat", _namaController),
                   
                   _buildLabel("Status"),
-                  _buildDropdown(_selectedStatus, _statusList, (v) => setState(() => _selectedStatus = v)),
+                  _buildDropdownStatus(),
                   
                   const SizedBox(height: 15),
                   _buildTextField("Stok", _stokController, isNumber: true),
@@ -213,6 +197,7 @@ class _EditAlatPageState extends State<EditAlatPage> {
 
                   const SizedBox(height: 40),
 
+                  // Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -235,10 +220,11 @@ class _EditAlatPageState extends State<EditAlatPage> {
     );
   }
 
+  // Widget Helper untuk UI yang lebih konsisten
   Widget _buildLabel(String label) {
     return Container(
       alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 8.0, top: 5),
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2C3E50))),
     );
   }
@@ -253,6 +239,7 @@ class _EditAlatPageState extends State<EditAlatPage> {
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           ),
           onChanged: (v) { if (label == "Nama Alat") setState(() {}); },
@@ -262,16 +249,17 @@ class _EditAlatPageState extends State<EditAlatPage> {
     );
   }
 
-  Widget _buildDropdown(String? value, List<String> items, Function(String?) onChanged) {
+  Widget _buildDropdownStatus() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: items.contains(value) ? value : null, 
+          value: _statusList.contains(_selectedStatus) ? _selectedStatus : null,
           isExpanded: true,
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: onChanged,
+          hint: const Text("Pilih Status"),
+          items: _statusList.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: (v) => setState(() => _selectedStatus = v),
         ),
       ),
     );
@@ -284,12 +272,17 @@ class _EditAlatPageState extends State<EditAlatPage> {
       child: DropdownButtonHideUnderline(
         child: _isFetchingKategori 
           ? const SizedBox(height: 48, child: Center(child: CircularProgressIndicator(strokeWidth: 2))) 
-          : DropdownButton<String>(
-              value: _kategoriList.contains(_selectedKategori) ? _selectedKategori : null,
+          : DropdownButton<int>(
+              value: _kategoriList.any((k) => k['id_kategori'] == _selectedKategoriId) ? _selectedKategoriId : null,
               isExpanded: true,
               hint: const Text("Pilih Kategori"),
-              items: _kategoriList.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (v) => setState(() => _selectedKategori = v),
+              items: _kategoriList.map((kat) {
+                return DropdownMenuItem<int>(
+                  value: kat['id_kategori'] as int,
+                  child: Text(kat['nama_kategori'].toString()),
+                );
+              }).toList(),
+              onChanged: (v) => setState(() => _selectedKategoriId = v),
             ),
       ),
     );
