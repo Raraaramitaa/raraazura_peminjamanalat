@@ -9,7 +9,7 @@ class DendaRiwayatPage extends StatelessWidget {
       backgroundColor: const Color(0xFFBFD6DB),
       body: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -21,7 +21,7 @@ class DendaRiwayatPage extends StatelessWidget {
                   const SizedBox(height: 15),
                   _buildRingkasanPembayaran(),
                   const SizedBox(height: 30),
-                  _buildButtonBayar(),
+                  _buildButtonBayar(context),
                 ],
               ),
             ),
@@ -31,18 +31,22 @@ class DendaRiwayatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(top: 60, bottom: 25, left: 20),
+      padding: const EdgeInsets.only(top: 60, bottom: 25, left: 10),
       decoration: const BoxDecoration(
         color: Color(0xFF8FAFB6),
         borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          CircleAvatar(backgroundColor: Color(0xFFD9D9D9), child: Icon(Icons.person)),
-          SizedBox(width: 15),
-          Column(
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+          const CircleAvatar(backgroundColor: Color(0xFFD9D9D9), child: Icon(Icons.person)),
+          const SizedBox(width: 15),
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text("Hallo, Selamat datang", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -57,7 +61,11 @@ class DendaRiwayatPage extends StatelessWidget {
   Widget _buildDaftarAlatDenda() {
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black87)),
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(12), 
+        border: Border.all(color: Colors.black87)
+      ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -87,8 +95,10 @@ class DendaRiwayatPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Denda", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                Text("Denda akibat keterlambatan dan kerusakan alat. Silakan lakukan pembayaran segera sesuai rincian.", 
-                  style: TextStyle(fontSize: 10)),
+                Text(
+                  "Denda akibat keterlambatan dan kerusakan alat. Silakan lakukan pembayaran segera sesuai rincian.", 
+                  style: TextStyle(fontSize: 10)
+                ),
               ],
             ),
           )
@@ -100,7 +110,11 @@ class DendaRiwayatPage extends StatelessWidget {
   Widget _buildRingkasanPembayaran() {
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black87)),
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(12), 
+        border: Border.all(color: Colors.black87)
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -129,13 +143,22 @@ class DendaRiwayatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildButtonBayar() {
+  Widget _buildButtonBayar(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       height: 45,
       child: ElevatedButton(
-        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8FAFB6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF8FAFB6), 
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+        ),
+        onPressed: () {
+          // Logika setelah bayar, misalnya kembali ke home
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Pembayaran Berhasil!")),
+          );
+          Navigator.pop(context);
+        },
         child: const Text("Bayar", style: TextStyle(color: Colors.white)),
       ),
     );

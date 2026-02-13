@@ -15,29 +15,24 @@ class SetujuStatusPage extends StatefulWidget {
 class _SetujuStatusPageState extends State<SetujuStatusPage> {
   final SupabaseClient supabase = Supabase.instance.client;
   bool _isUpdating = false;
+  late String _currentStatus; // Variable lokal untuk update UI instan
 
   @override
   void initState() {
     super.initState();
-    // Debugging: Melihat apa saja kunci yang masuk ke halaman ini
-    debugPrint("Isi Data Masuk: ${widget.data}");
+    // Inisialisasi status dari data yang dikirim
+    _currentStatus = widget.data['status']?.toString().toLowerCase() ?? 'menunggu';
   }
 
   // ================= FUNGSI UPDATE STATUS =================
   Future<void> _updateStatus(String newStatus) async {
     if (_isUpdating) return;
 
-    // --- LOGIKA ANTI-ERROR: MENCARI ID SECARA OTOMATIS ---
-    // Mencoba mencari ID dari semua kemungkinan nama kolom yang ada di database Anda
-    final dynamic idPinjam = widget.data['id_peminjaman'] ?? 
-                             widget.data['id'] ?? 
-                             widget.data['id_pinjam'] ??
-                             widget.data['id_user'] ??
-                             widget.data['id_alat']; // Mencari kemungkinan key lain
+    // Mengambil ID dari map
+    final dynamic idPinjam = widget.data['id_peminjaman'];
 
     if (idPinjam == null) {
-      _showSnackBar("Gagal: ID tidak ditemukan. Cek Console Log!", Colors.red);
-      debugPrint("ERROR: Tidak ada key ID dalam data: ${widget.data.keys.toList()}");
+      _showSnackBar("Gagal: ID Transaksi tidak ditemukan!", Colors.red);
       return;
     }
 
@@ -45,24 +40,23 @@ class _SetujuStatusPageState extends State<SetujuStatusPage> {
 
     try {
       // Eksekusi Update ke Supabase
-      // Pastikan nama kolom Primary Key di tabel 'peminjaman' Anda adalah 'id_peminjaman'
       await supabase
           .from('peminjaman')
           .update({'status': newStatus})
           .eq('id_peminjaman', idPinjam);
 
       if (mounted) {
-        _showSnackBar("✅ Berhasil: Status diperbarui", Colors.green);
+        setState(() {
+          _currentStatus = newStatus; // Update tampilan lokal
+        });
         
-        await Future.delayed(const Duration(milliseconds: 700));
-
-        // Kembali dengan 'true' agar halaman list memanggil fetch ulang
-        Navigator.pop(context, true);
+        _showSnackBar("✅ Berhasil: Peminjaman Disetujui", Colors.green);
+        
+        await Future.delayed(const Duration(milliseconds: 800));
+        Navigator.pop(context, true); // Kembali ke list
       }
     } catch (e) {
-      // Jika error database tetap muncul, ini akan menangkap detailnya
-      _showSnackBar("Kesalahan DB: $e", Colors.red);
-      debugPrint("Detail Error Supabase: $e");
+      _showSnackBar("Kesalahan: $e", Colors.red);
     } finally {
       if (mounted) setState(() => _isUpdating = false);
     }
@@ -74,6 +68,7 @@ class _SetujuStatusPageState extends State<SetujuStatusPage> {
         content: Text(message),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
@@ -81,14 +76,13 @@ class _SetujuStatusPageState extends State<SetujuStatusPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Ambil status dan ubah ke lowercase untuk pengecekan
-    final String status = widget.data['status']?.toString().toLowerCase() ?? 'menunggu';
-    final bool isDisetujui = status == "disetujui" || status == "selesai";
+    // Cek apakah status sudah disetujui
+    final bool isDisetujui = _currentStatus == "disetujui" || _currentStatus == "selesai";
 
     return Scaffold(
       backgroundColor: const Color(0xFF8FAFB6),
       appBar: AppBar(
-        title: const Text("Persetujuan", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text("Persetujuan Alat", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -108,15 +102,15 @@ class _SetujuStatusPageState extends State<SetujuStatusPage> {
                 child: Column(
                   children: [
                     Icon(
-                      isDisetujui ? Icons.check_circle : Icons.pending,
-                      size: 70,
+                      isDisetujui ? Icons.check_circle : Icons.pending_actions,
+                      size: 80,
                       color: isDisetujui ? Colors.green : Colors.orange,
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      isDisetujui ? "STATUS: DISETUJUI" : "STATUS: MENUNGGU",
+                      isDisetujui ? "STATUS: DISETUJUI" : "STATUS: MENUNGGU KONFIRMASI",
                       style: TextStyle(
-                        fontSize: 18, 
+                        fontSize: 16, 
                         fontWeight: FontWeight.bold, 
                         color: isDisetujui ? Colors.green : Colors.orange
                       ),
@@ -124,14 +118,14 @@ class _SetujuStatusPageState extends State<SetujuStatusPage> {
                     const SizedBox(height: 30),
 
                     // --- CARD INFORMASI ---
-                    _infoBox("Peminjam", widget.data['nama_peminjam'] ?? widget.data['email'] ?? "-"),
-                    _infoBox("Nama Alat", widget.data['nama_alat'] ?? "-"),
-                    _infoBox("Jumlah", "${widget.data['total_alat'] ?? widget.data['jumlah_pinjam'] ?? '0'} Unit"),
-                    _infoBox("Tanggal", widget.data['tanggal_pinjam'] ?? "-"),
+                    _infoBox("Nama Peminjam", widget.data['nama_peminjam'] ?? "-"),
+                    _infoBox("Barang yang Dipinjam", widget.data['nama_alat'] ?? "-"),
+                    _infoBox("Jumlah Unit", "${widget.data['total_alat'] ?? '0'} Unit"),
+                    _infoBox("Periode Pinjam", widget.data['tanggal_pinjam'] ?? "-"),
 
                     const SizedBox(height: 40),
 
-                    // Tombol muncul hanya jika status belum disetujui
+                    // Tombol Hanya Muncul Jika Status Masih Menunggu
                     if (!isDisetujui)
                       SizedBox(
                         width: double.infinity,
@@ -139,6 +133,7 @@ class _SetujuStatusPageState extends State<SetujuStatusPage> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF8FAFB6),
+                            elevation: 2,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                           ),
                           onPressed: () => _updateStatus("disetujui"),
@@ -147,6 +142,11 @@ class _SetujuStatusPageState extends State<SetujuStatusPage> {
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                         ),
+                      )
+                    else
+                      const Text(
+                        "Transaksi ini telah disetujui.",
+                        style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
                       ),
                   ],
                 ),
@@ -162,13 +162,13 @@ class _SetujuStatusPageState extends State<SetujuStatusPage> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 5),
           Text(value, style: const TextStyle(fontSize: 15, color: Colors.black87, fontWeight: FontWeight.w600)),
         ],

@@ -98,9 +98,11 @@ class StatusPage extends StatelessWidget {
                 const Text("Menunggu Persetujuan",
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 10),
-                // Menambahkan context agar bisa navigasi
-                _buildPersetujuanCard(context, "Rraazura", "laptop", "27 - 30 januari 2026"),
-                _buildPersetujuanCard(context, "Claraa", "Sonny camera", "28 - 29 januari 2026"),
+                
+                // DATA HARUS MEMILIKI ID (Contoh id_peminjaman: 101)
+                _buildPersetujuanCard(context, 101, "Rraazura", "laptop", "27 - 30 januari 2026"),
+                _buildPersetujuanCard(context, 102, "Claraa", "Sonny camera", "28 - 29 januari 2026"),
+                
                 const SizedBox(height: 20),
                 const Text("Pengembalian Hari ini",
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -136,7 +138,7 @@ class StatusPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPersetujuanCard(BuildContext context, String name, String item, String date) {
+  Widget _buildPersetujuanCard(BuildContext context, int id, String name, String item, String date) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       margin: const EdgeInsets.only(bottom: 15),
@@ -165,10 +167,19 @@ class StatusPage extends StatelessWidget {
               Expanded(
                 child: TextButton(
                   onPressed: () {
-                    // NAVIGASI KE SETUJU
+                    // KIRIM DATA LENGKAP KE SETUJU_STATUS.DART
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const SetujuStatusPage(data: {},)),
+                      MaterialPageRoute(
+                        builder: (context) => SetujuStatusPage(data: {
+                          'id_peminjaman': id,
+                          'nama_peminjam': name,
+                          'nama_alat': item,
+                          'tanggal_pinjam': date,
+                          'total_alat': 1,
+                          'status': 'menunggu',
+                        }),
+                      ),
                     );
                   },
                   style: TextButton.styleFrom(
@@ -182,7 +193,6 @@ class StatusPage extends StatelessWidget {
               Expanded(
                 child: TextButton(
                   onPressed: () {
-                    // NAVIGASI KE TOLAK
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const TolakStatusPage()),
